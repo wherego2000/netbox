@@ -15,6 +15,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='circuit',
             name='upstream_speed',
-            field=models.PositiveIntegerField(blank=True, help_text=b'Upstream speed, if different from port speed', null=True, verbose_name=b'Upstream speed (Kbps)'),
+            field=models.PositiveIntegerField(
+                blank=True, help_text=b'Upstream speed, if different from port speed', null=True, verbose_name=b'Upstream speed (Kbps)'),
         ),
     ]

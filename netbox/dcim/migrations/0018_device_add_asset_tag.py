@@ -16,6 +16,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='device',
             name='asset_tag',
-            field=utilities.fields.NullableCharField(blank=True, help_text=b'A unique tag used to identify this device', max_length=50, null=True, unique=True, verbose_name=b'Asset tag'),
+            field=utilities.fields.NullableCharField(
+                blank=True, help_text=b'A unique tag used to identify this device', max_length=50, null=True, unique=True, verbose_name=b'Asset tag'),
         ),
     ]

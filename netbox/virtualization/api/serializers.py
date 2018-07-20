@@ -25,7 +25,8 @@ class ClusterTypeSerializer(ValidatedModelSerializer):
 
 
 class NestedClusterTypeSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='virtualization-api:clustertype-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='virtualization-api:clustertype-detail')
 
     class Meta:
         model = ClusterType
@@ -44,7 +45,8 @@ class ClusterGroupSerializer(ValidatedModelSerializer):
 
 
 class NestedClusterGroupSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='virtualization-api:clustergroup-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='virtualization-api:clustergroup-detail')
 
     class Meta:
         model = ClusterGroup
@@ -62,11 +64,13 @@ class ClusterSerializer(CustomFieldModelSerializer):
 
     class Meta:
         model = Cluster
-        fields = ['id', 'name', 'type', 'group', 'site', 'comments', 'custom_fields', 'created', 'last_updated']
+        fields = ['id', 'name', 'type', 'group', 'site',
+                  'comments', 'custom_fields', 'created', 'last_updated']
 
 
 class NestedClusterSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='virtualization-api:cluster-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='virtualization-api:cluster-detail')
 
     class Meta:
         model = Cluster
@@ -77,7 +81,8 @@ class WritableClusterSerializer(CustomFieldModelSerializer):
 
     class Meta:
         model = Cluster
-        fields = ['id', 'name', 'type', 'group', 'site', 'comments', 'custom_fields', 'created', 'last_updated']
+        fields = ['id', 'name', 'type', 'group', 'site',
+                  'comments', 'custom_fields', 'created', 'last_updated']
 
 
 #
@@ -86,7 +91,8 @@ class WritableClusterSerializer(CustomFieldModelSerializer):
 
 # Cannot import ipam.api.NestedIPAddressSerializer due to circular dependency
 class VirtualMachineIPAddressSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='ipam-api:ipaddress-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='ipam-api:ipaddress-detail')
 
     class Meta:
         model = IPAddress
@@ -112,7 +118,8 @@ class VirtualMachineSerializer(CustomFieldModelSerializer):
 
 
 class NestedVirtualMachineSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='virtualization-api:virtualmachine-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='virtualization-api:virtualmachine-detail')
 
     class Meta:
         model = VirtualMachine
@@ -135,7 +142,8 @@ class WritableVirtualMachineSerializer(CustomFieldModelSerializer):
 
 # Cannot import ipam.api.serializers.NestedVLANSerializer due to circular dependency
 class InterfaceVLANSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='ipam-api:vlan-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='ipam-api:vlan-detail')
 
     class Meta:
         model = VLAN
@@ -157,7 +165,8 @@ class InterfaceSerializer(serializers.ModelSerializer):
 
 
 class NestedInterfaceSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='virtualization-api:interface-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='virtualization-api:interface-detail')
 
     class Meta:
         model = Interface

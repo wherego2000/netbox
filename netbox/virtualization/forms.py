@@ -118,9 +118,12 @@ class ClusterCSVForm(forms.ModelForm):
 
 
 class ClusterBulkEditForm(BootstrapMixin, CustomFieldBulkEditForm):
-    pk = forms.ModelMultipleChoiceField(queryset=Cluster.objects.all(), widget=forms.MultipleHiddenInput)
-    type = forms.ModelChoiceField(queryset=ClusterType.objects.all(), required=False)
-    group = forms.ModelChoiceField(queryset=ClusterGroup.objects.all(), required=False)
+    pk = forms.ModelMultipleChoiceField(
+        queryset=Cluster.objects.all(), widget=forms.MultipleHiddenInput)
+    type = forms.ModelChoiceField(
+        queryset=ClusterType.objects.all(), required=False)
+    group = forms.ModelChoiceField(
+        queryset=ClusterGroup.objects.all(), required=False)
     site = forms.ModelChoiceField(queryset=Site.objects.all(), required=False)
     comments = CommentField(widget=SmallTextarea)
 
@@ -220,7 +223,8 @@ class ClusterAddDevicesForm(BootstrapMixin, ChainedFieldsMixin, forms.Form):
 
 
 class ClusterRemoveDevicesForm(ConfirmationForm):
-    pk = forms.ModelMultipleChoiceField(queryset=Device.objects.all(), widget=forms.MultipleHiddenInput)
+    pk = forms.ModelMultipleChoiceField(
+        queryset=Device.objects.all(), widget=forms.MultipleHiddenInput)
 
 
 #
@@ -347,19 +351,26 @@ class VirtualMachineCSVForm(forms.ModelForm):
 
 
 class VirtualMachineBulkEditForm(BootstrapMixin, CustomFieldBulkEditForm):
-    pk = forms.ModelMultipleChoiceField(queryset=VirtualMachine.objects.all(), widget=forms.MultipleHiddenInput)
-    status = forms.ChoiceField(choices=add_blank_choice(VM_STATUS_CHOICES), required=False, initial='')
-    cluster = forms.ModelChoiceField(queryset=Cluster.objects.all(), required=False)
-    role = forms.ModelChoiceField(queryset=DeviceRole.objects.filter(vm_role=True), required=False)
-    tenant = forms.ModelChoiceField(queryset=Tenant.objects.all(), required=False)
-    platform = forms.ModelChoiceField(queryset=Platform.objects.all(), required=False)
+    pk = forms.ModelMultipleChoiceField(
+        queryset=VirtualMachine.objects.all(), widget=forms.MultipleHiddenInput)
+    status = forms.ChoiceField(choices=add_blank_choice(
+        VM_STATUS_CHOICES), required=False, initial='')
+    cluster = forms.ModelChoiceField(
+        queryset=Cluster.objects.all(), required=False)
+    role = forms.ModelChoiceField(
+        queryset=DeviceRole.objects.filter(vm_role=True), required=False)
+    tenant = forms.ModelChoiceField(
+        queryset=Tenant.objects.all(), required=False)
+    platform = forms.ModelChoiceField(
+        queryset=Platform.objects.all(), required=False)
     vcpus = forms.IntegerField(required=False, label='vCPUs')
     memory = forms.IntegerField(required=False, label='Memory (MB)')
     disk = forms.IntegerField(required=False, label='Disk (GB)')
     comments = CommentField(widget=SmallTextarea)
 
     class Meta:
-        nullable_fields = ['role', 'tenant', 'platform', 'vcpus', 'memory', 'disk', 'comments']
+        nullable_fields = ['role', 'tenant', 'platform',
+                           'vcpus', 'memory', 'disk', 'comments']
 
 
 class VirtualMachineFilterForm(BootstrapMixin, CustomFieldFilterForm):
@@ -376,16 +387,19 @@ class VirtualMachineFilterForm(BootstrapMixin, CustomFieldFilterForm):
         null_label='-- None --'
     )
     cluster_id = FilterChoiceField(
-        queryset=Cluster.objects.annotate(filter_count=Count('virtual_machines')),
+        queryset=Cluster.objects.annotate(
+            filter_count=Count('virtual_machines')),
         label='Cluster'
     )
     site = FilterChoiceField(
-        queryset=Site.objects.annotate(filter_count=Count('clusters__virtual_machines')),
+        queryset=Site.objects.annotate(
+            filter_count=Count('clusters__virtual_machines')),
         to_field_name='slug',
         null_label='-- None --'
     )
     role = FilterChoiceField(
-        queryset=DeviceRole.objects.filter(vm_role=True).annotate(filter_count=Count('virtual_machines')),
+        queryset=DeviceRole.objects.filter(vm_role=True).annotate(
+            filter_count=Count('virtual_machines')),
         to_field_name='slug',
         null_label='-- None --'
     )
@@ -396,12 +410,14 @@ class VirtualMachineFilterForm(BootstrapMixin, CustomFieldFilterForm):
         required=False
     )
     tenant = FilterChoiceField(
-        queryset=Tenant.objects.annotate(filter_count=Count('virtual_machines')),
+        queryset=Tenant.objects.annotate(
+            filter_count=Count('virtual_machines')),
         to_field_name='slug',
         null_label='-- None --'
     )
     platform = FilterChoiceField(
-        queryset=Platform.objects.annotate(filter_count=Count('virtual_machines')),
+        queryset=Platform.objects.annotate(
+            filter_count=Count('virtual_machines')),
         to_field_name='slug',
         null_label='-- None --'
     )
@@ -450,9 +466,11 @@ class InterfaceForm(BootstrapMixin, forms.ModelForm):
 
 class InterfaceCreateForm(ComponentForm):
     name_pattern = ExpandableNameField(label='Name')
-    form_factor = forms.ChoiceField(choices=VIFACE_FF_CHOICES, initial=IFACE_FF_VIRTUAL, widget=forms.HiddenInput())
+    form_factor = forms.ChoiceField(
+        choices=VIFACE_FF_CHOICES, initial=IFACE_FF_VIRTUAL, widget=forms.HiddenInput())
     enabled = forms.BooleanField(required=False)
-    mtu = forms.IntegerField(required=False, min_value=1, max_value=32767, label='MTU')
+    mtu = forms.IntegerField(required=False, min_value=1,
+                             max_value=32767, label='MTU')
     mac_address = MACAddressFormField(required=False, label='MAC Address')
     description = forms.CharField(max_length=100, required=False)
 
@@ -466,9 +484,12 @@ class InterfaceCreateForm(ComponentForm):
 
 
 class InterfaceBulkEditForm(BootstrapMixin, BulkEditForm):
-    pk = forms.ModelMultipleChoiceField(queryset=Interface.objects.all(), widget=forms.MultipleHiddenInput)
-    enabled = forms.NullBooleanField(required=False, widget=BulkEditNullBooleanSelect)
-    mtu = forms.IntegerField(required=False, min_value=1, max_value=32767, label='MTU')
+    pk = forms.ModelMultipleChoiceField(
+        queryset=Interface.objects.all(), widget=forms.MultipleHiddenInput)
+    enabled = forms.NullBooleanField(
+        required=False, widget=BulkEditNullBooleanSelect)
+    mtu = forms.IntegerField(required=False, min_value=1,
+                             max_value=32767, label='MTU')
     description = forms.CharField(max_length=100, required=False)
 
     class Meta:
@@ -480,12 +501,15 @@ class InterfaceBulkEditForm(BootstrapMixin, BulkEditForm):
 #
 
 class VirtualMachineBulkAddComponentForm(BootstrapMixin, forms.Form):
-    pk = forms.ModelMultipleChoiceField(queryset=VirtualMachine.objects.all(), widget=forms.MultipleHiddenInput)
+    pk = forms.ModelMultipleChoiceField(
+        queryset=VirtualMachine.objects.all(), widget=forms.MultipleHiddenInput)
     name_pattern = ExpandableNameField(label='Name')
 
 
 class VirtualMachineBulkAddInterfaceForm(VirtualMachineBulkAddComponentForm):
-    form_factor = forms.ChoiceField(choices=VIFACE_FF_CHOICES, initial=IFACE_FF_VIRTUAL, widget=forms.HiddenInput())
+    form_factor = forms.ChoiceField(
+        choices=VIFACE_FF_CHOICES, initial=IFACE_FF_VIRTUAL, widget=forms.HiddenInput())
     enabled = forms.BooleanField(required=False, initial=True)
-    mtu = forms.IntegerField(required=False, min_value=1, max_value=32767, label='MTU')
+    mtu = forms.IntegerField(required=False, min_value=1,
+                             max_value=32767, label='MTU')
     description = forms.CharField(max_length=100, required=False)

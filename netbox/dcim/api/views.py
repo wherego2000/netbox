@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from collections import OrderedDict
 
 from django.conf import settings
+from django.db import transaction
 from django.http import HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
@@ -36,12 +37,11 @@ class DCIMFieldChoicesViewSet(FieldChoicesViewSet):
     fields = (
         (Device, ['face', 'status']),
         (ConsolePort, ['connection_status']),
-        (Interface, ['form_factor', 'mode']),
+        (Interface, ['form_factor']),
         (InterfaceConnection, ['connection_status']),
         (InterfaceTemplate, ['form_factor']),
         (PowerPort, ['connection_status']),
         (Rack, ['type', 'width']),
-        (Site, ['status']),
     )
 
 
@@ -73,7 +73,8 @@ class SiteViewSet(CustomFieldModelViewSet):
         """
         site = get_object_or_404(Site, pk=pk)
         queryset = Graph.objects.filter(type=GRAPH_TYPE_SITE)
-        serializer = RenderedGraphSerializer(queryset, many=True, context={'graphed_object': site})
+        serializer = RenderedGraphSerializer(
+            queryset, many=True, context={'graphed_object': site})
         return Response(serializer.data)
 
 
@@ -125,7 +126,8 @@ class RackViewSet(CustomFieldModelViewSet):
 
         page = self.paginate_queryset(elevation)
         if page is not None:
-            rack_units = serializers.RackUnitSerializer(page, many=True, context={'request': request})
+            rack_units = serializers.RackUnitSerializer(
+                page, many=True, context={'request': request})
             return self.get_paginated_response(rack_units.data)
 
 
@@ -170,42 +172,48 @@ class DeviceTypeViewSet(CustomFieldModelViewSet):
 #
 
 class ConsolePortTemplateViewSet(ModelViewSet):
-    queryset = ConsolePortTemplate.objects.select_related('device_type__manufacturer')
+    queryset = ConsolePortTemplate.objects.select_related(
+        'device_type__manufacturer')
     serializer_class = serializers.ConsolePortTemplateSerializer
     write_serializer_class = serializers.WritableConsolePortTemplateSerializer
     filter_class = filters.ConsolePortTemplateFilter
 
 
 class ConsoleServerPortTemplateViewSet(ModelViewSet):
-    queryset = ConsoleServerPortTemplate.objects.select_related('device_type__manufacturer')
+    queryset = ConsoleServerPortTemplate.objects.select_related(
+        'device_type__manufacturer')
     serializer_class = serializers.ConsoleServerPortTemplateSerializer
     write_serializer_class = serializers.WritableConsoleServerPortTemplateSerializer
     filter_class = filters.ConsoleServerPortTemplateFilter
 
 
 class PowerPortTemplateViewSet(ModelViewSet):
-    queryset = PowerPortTemplate.objects.select_related('device_type__manufacturer')
+    queryset = PowerPortTemplate.objects.select_related(
+        'device_type__manufacturer')
     serializer_class = serializers.PowerPortTemplateSerializer
     write_serializer_class = serializers.WritablePowerPortTemplateSerializer
     filter_class = filters.PowerPortTemplateFilter
 
 
 class PowerOutletTemplateViewSet(ModelViewSet):
-    queryset = PowerOutletTemplate.objects.select_related('device_type__manufacturer')
+    queryset = PowerOutletTemplate.objects.select_related(
+        'device_type__manufacturer')
     serializer_class = serializers.PowerOutletTemplateSerializer
     write_serializer_class = serializers.WritablePowerOutletTemplateSerializer
     filter_class = filters.PowerOutletTemplateFilter
 
 
 class InterfaceTemplateViewSet(ModelViewSet):
-    queryset = InterfaceTemplate.objects.select_related('device_type__manufacturer')
+    queryset = InterfaceTemplate.objects.select_related(
+        'device_type__manufacturer')
     serializer_class = serializers.InterfaceTemplateSerializer
     write_serializer_class = serializers.WritableInterfaceTemplateSerializer
     filter_class = filters.InterfaceTemplateFilter
 
 
 class DeviceBayTemplateViewSet(ModelViewSet):
-    queryset = DeviceBayTemplate.objects.select_related('device_type__manufacturer')
+    queryset = DeviceBayTemplate.objects.select_related(
+        'device_type__manufacturer')
     serializer_class = serializers.DeviceBayTemplateSerializer
     write_serializer_class = serializers.WritableDeviceBayTemplateSerializer
     filter_class = filters.DeviceBayTemplateFilter
@@ -254,9 +262,11 @@ class DeviceViewSet(CustomFieldModelViewSet):
         """
         device = get_object_or_404(Device, pk=pk)
         if not device.primary_ip:
-            raise ServiceUnavailable("This device does not have a primary IP address configured.")
+            raise ServiceUnavailable(
+                "This device does not have a primary IP address configured.")
         if device.platform is None:
-            raise ServiceUnavailable("No platform is configured for this device.")
+            raise ServiceUnavailable(
+                "No platform is configured for this device.")
         if not device.platform.napalm_driver:
             raise ServiceUnavailable("No NAPALM driver is configured for this device's platform ().".format(
                 device.platform
@@ -266,8 +276,9 @@ class DeviceViewSet(CustomFieldModelViewSet):
         try:
             import napalm
         except ImportError:
-            raise ServiceUnavailable("NAPALM is not installed. Please see the documentation for instructions.")
-        from napalm.base.exceptions import ModuleImportError
+            raise ServiceUnavailable(
+                "NAPALM is not installed. Please see the documentation for instructions.")
+        from napalm.base.exceptions import ConnectAuthError, ModuleImportError
 
         # Validate the configured driver
         try:
@@ -281,8 +292,16 @@ class DeviceViewSet(CustomFieldModelViewSet):
         if not request.user.has_perm('dcim.napalm_read'):
             return HttpResponseForbidden()
 
-        # Connect to the device
+        # Validate requested NAPALM methods
         napalm_methods = request.GET.getlist('method')
+        for method in napalm_methods:
+            if not hasattr(driver, method):
+                return HttpResponseBadRequest("Unknown NAPALM method: {}".format(method))
+            elif not method.startswith('get_'):
+                return HttpResponseBadRequest("Unsupported NAPALM method: {}".format(method))
+
+        # Connect to the device and execute the requested methods
+        # TODO: Improve error handling
         response = OrderedDict([(m, None) for m in napalm_methods])
         ip_address = str(device.primary_ip.address.ip)
         d = driver(
@@ -294,23 +313,13 @@ class DeviceViewSet(CustomFieldModelViewSet):
         )
         try:
             d.open()
-        except Exception as e:
-            raise ServiceUnavailable("Error connecting to the device at {}: {}".format(ip_address, e))
-
-        # Validate and execute each specified NAPALM method
-        for method in napalm_methods:
-            if not hasattr(driver, method):
-                response[method] = {'error': 'Unknown NAPALM method'}
-                continue
-            if not method.startswith('get_'):
-                response[method] = {'error': 'Only get_* NAPALM methods are supported'}
-                continue
-            try:
+            for method in napalm_methods:
                 response[method] = getattr(d, method)()
-            except NotImplementedError:
-                response[method] = {'error': 'Method not implemented for NAPALM driver {}'.format(driver)}
-        d.close()
+        except Exception as e:
+            raise ServiceUnavailable(
+                "Error connecting to the device at {}: {}".format(ip_address, e))
 
+        d.close()
         return Response(response)
 
 
@@ -326,21 +335,24 @@ class ConsolePortViewSet(ModelViewSet):
 
 
 class ConsoleServerPortViewSet(ModelViewSet):
-    queryset = ConsoleServerPort.objects.select_related('device', 'connected_console__device')
+    queryset = ConsoleServerPort.objects.select_related(
+        'device', 'connected_console__device')
     serializer_class = serializers.ConsoleServerPortSerializer
     write_serializer_class = serializers.WritableConsoleServerPortSerializer
     filter_class = filters.ConsoleServerPortFilter
 
 
 class PowerPortViewSet(ModelViewSet):
-    queryset = PowerPort.objects.select_related('device', 'power_outlet__device')
+    queryset = PowerPort.objects.select_related(
+        'device', 'power_outlet__device')
     serializer_class = serializers.PowerPortSerializer
     write_serializer_class = serializers.WritablePowerPortSerializer
     filter_class = filters.PowerPortFilter
 
 
 class PowerOutletViewSet(ModelViewSet):
-    queryset = PowerOutlet.objects.select_related('device', 'connected_port__device')
+    queryset = PowerOutlet.objects.select_related(
+        'device', 'connected_port__device')
     serializer_class = serializers.PowerOutletSerializer
     write_serializer_class = serializers.WritablePowerOutletSerializer
     filter_class = filters.PowerOutletFilter
@@ -359,7 +371,8 @@ class InterfaceViewSet(ModelViewSet):
         """
         interface = get_object_or_404(Interface, pk=pk)
         queryset = Graph.objects.filter(type=GRAPH_TYPE_INTERFACE)
-        serializer = RenderedGraphSerializer(queryset, many=True, context={'graphed_object': interface})
+        serializer = RenderedGraphSerializer(queryset, many=True, context={
+                                             'graphed_object': interface})
         return Response(serializer.data)
 
 
@@ -382,19 +395,22 @@ class InventoryItemViewSet(ModelViewSet):
 #
 
 class ConsoleConnectionViewSet(ListModelMixin, GenericViewSet):
-    queryset = ConsolePort.objects.select_related('device', 'cs_port__device').filter(cs_port__isnull=False)
+    queryset = ConsolePort.objects.select_related(
+        'device', 'cs_port__device').filter(cs_port__isnull=False)
     serializer_class = serializers.ConsolePortSerializer
     filter_class = filters.ConsoleConnectionFilter
 
 
 class PowerConnectionViewSet(ListModelMixin, GenericViewSet):
-    queryset = PowerPort.objects.select_related('device', 'power_outlet__device').filter(power_outlet__isnull=False)
+    queryset = PowerPort.objects.select_related(
+        'device', 'power_outlet__device').filter(power_outlet__isnull=False)
     serializer_class = serializers.PowerPortSerializer
     filter_class = filters.PowerConnectionFilter
 
 
 class InterfaceConnectionViewSet(ModelViewSet):
-    queryset = InterfaceConnection.objects.select_related('interface_a__device', 'interface_b__device')
+    queryset = InterfaceConnection.objects.select_related(
+        'interface_a__device', 'interface_b__device')
     serializer_class = serializers.InterfaceConnectionSerializer
     write_serializer_class = serializers.WritableInterfaceConnectionSerializer
     filter_class = filters.InterfaceConnectionFilter
@@ -437,12 +453,15 @@ class ConnectedDeviceViewSet(ViewSet):
     def list(self, request):
 
         peer_device_name = request.query_params.get(self._device_param.name)
-        peer_interface_name = request.query_params.get(self._interface_param.name)
+        peer_interface_name = request.query_params.get(
+            self._interface_param.name)
         if not peer_device_name or not peer_interface_name:
-            raise MissingFilterException(detail='Request must include "peer-device" and "peer-interface" filters.')
+            raise MissingFilterException(
+                detail='Request must include "peer-device" and "peer-interface" filters.')
 
         # Determine local interface from peer interface's connection
-        peer_interface = get_object_or_404(Interface, device__name=peer_device_name, name=peer_interface_name)
+        peer_interface = get_object_or_404(
+            Interface, device__name=peer_device_name, name=peer_interface_name)
         local_interface = peer_interface.connected_interface
 
         if local_interface is None:

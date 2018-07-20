@@ -16,10 +16,12 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='RackRole',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.AutoField(auto_created=True,
+                                        primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=50, unique=True)),
                 ('slug', models.SlugField(unique=True)),
-                ('color', models.CharField(choices=[[b'teal', b'Teal'], [b'green', b'Green'], [b'blue', b'Blue'], [b'purple', b'Purple'], [b'yellow', b'Yellow'], [b'orange', b'Orange'], [b'red', b'Red'], [b'light_gray', b'Light Gray'], [b'medium_gray', b'Medium Gray'], [b'dark_gray', b'Dark Gray']], max_length=30)),
+                ('color', models.CharField(choices=[[b'teal', b'Teal'], [b'green', b'Green'], [b'blue', b'Blue'], [b'purple', b'Purple'], [b'yellow', b'Yellow'], [
+                 b'orange', b'Orange'], [b'red', b'Red'], [b'light_gray', b'Light Gray'], [b'medium_gray', b'Medium Gray'], [b'dark_gray', b'Dark Gray']], max_length=30)),
             ],
             options={
                 'ordering': ['name'],
@@ -28,6 +30,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='rack',
             name='role',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='racks', to='dcim.RackRole'),
+            field=models.ForeignKey(
+                blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='racks', to='dcim.RackRole'),
         ),
     ]

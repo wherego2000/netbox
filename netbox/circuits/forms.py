@@ -25,7 +25,8 @@ class ProviderForm(BootstrapMixin, CustomFieldForm):
 
     class Meta:
         model = Provider
-        fields = ['name', 'slug', 'asn', 'account', 'portal_url', 'noc_contact', 'admin_contact', 'comments']
+        fields = ['name', 'slug', 'asn', 'account', 'portal_url',
+                  'noc_contact', 'admin_contact', 'comments']
         widgets = {
             'noc_contact': SmallTextarea(attrs={'rows': 5}),
             'admin_contact': SmallTextarea(attrs={'rows': 5}),
@@ -54,16 +55,21 @@ class ProviderCSVForm(forms.ModelForm):
 
 
 class ProviderBulkEditForm(BootstrapMixin, CustomFieldBulkEditForm):
-    pk = forms.ModelMultipleChoiceField(queryset=Provider.objects.all(), widget=forms.MultipleHiddenInput)
+    pk = forms.ModelMultipleChoiceField(
+        queryset=Provider.objects.all(), widget=forms.MultipleHiddenInput)
     asn = forms.IntegerField(required=False, label='ASN')
-    account = forms.CharField(max_length=30, required=False, label='Account number')
+    account = forms.CharField(
+        max_length=30, required=False, label='Account number')
     portal_url = forms.URLField(required=False, label='Portal')
-    noc_contact = forms.CharField(required=False, widget=SmallTextarea, label='NOC contact')
-    admin_contact = forms.CharField(required=False, widget=SmallTextarea, label='Admin contact')
+    noc_contact = forms.CharField(
+        required=False, widget=SmallTextarea, label='NOC contact')
+    admin_contact = forms.CharField(
+        required=False, widget=SmallTextarea, label='Admin contact')
     comments = CommentField(widget=SmallTextarea)
 
     class Meta:
-        nullable_fields = ['asn', 'account', 'portal_url', 'noc_contact', 'admin_contact', 'comments']
+        nullable_fields = ['asn', 'account', 'portal_url',
+                           'noc_contact', 'admin_contact', 'comments']
 
 
 class ProviderFilterForm(BootstrapMixin, CustomFieldFilterForm):
@@ -156,12 +162,18 @@ class CircuitCSVForm(forms.ModelForm):
 
 
 class CircuitBulkEditForm(BootstrapMixin, CustomFieldBulkEditForm):
-    pk = forms.ModelMultipleChoiceField(queryset=Circuit.objects.all(), widget=forms.MultipleHiddenInput)
-    type = forms.ModelChoiceField(queryset=CircuitType.objects.all(), required=False)
-    provider = forms.ModelChoiceField(queryset=Provider.objects.all(), required=False)
-    status = forms.ChoiceField(choices=add_blank_choice(CIRCUIT_STATUS_CHOICES), required=False, initial='')
-    tenant = forms.ModelChoiceField(queryset=Tenant.objects.all(), required=False)
-    commit_rate = forms.IntegerField(required=False, label='Commit rate (Kbps)')
+    pk = forms.ModelMultipleChoiceField(
+        queryset=Circuit.objects.all(), widget=forms.MultipleHiddenInput)
+    type = forms.ModelChoiceField(
+        queryset=CircuitType.objects.all(), required=False)
+    provider = forms.ModelChoiceField(
+        queryset=Provider.objects.all(), required=False)
+    status = forms.ChoiceField(choices=add_blank_choice(
+        CIRCUIT_STATUS_CHOICES), required=False, initial='')
+    tenant = forms.ModelChoiceField(
+        queryset=Tenant.objects.all(), required=False)
+    commit_rate = forms.IntegerField(
+        required=False, label='Commit rate (Kbps)')
     description = forms.CharField(max_length=100, required=False)
     comments = CommentField(widget=SmallTextarea)
 
@@ -192,10 +204,12 @@ class CircuitFilterForm(BootstrapMixin, CustomFieldFilterForm):
         null_label='-- None --'
     )
     site = FilterChoiceField(
-        queryset=Site.objects.annotate(filter_count=Count('circuit_terminations')),
+        queryset=Site.objects.annotate(
+            filter_count=Count('circuit_terminations')),
         to_field_name='slug'
     )
-    commit_rate = forms.IntegerField(required=False, min_value=0, label='Commit rate (Kbps)')
+    commit_rate = forms.IntegerField(
+        required=False, min_value=0, label='Commit rate (Kbps)')
 
 
 #

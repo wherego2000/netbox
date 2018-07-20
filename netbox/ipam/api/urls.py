@@ -9,6 +9,7 @@ class IPAMRootView(routers.APIRootView):
     """
     IPAM API root view
     """
+
     def get_view_name(self):
         return 'IPAM'
 
@@ -17,7 +18,8 @@ router = routers.DefaultRouter()
 router.APIRootView = IPAMRootView
 
 # Field choices
-router.register(r'_choices', views.IPAMFieldChoicesViewSet, base_name='field-choice')
+router.register(r'_choices', views.IPAMFieldChoicesViewSet,
+                base_name='field-choice')
 
 # VRFs
 router.register(r'vrfs', views.VRFViewSet)

@@ -15,6 +15,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='vrf',
             name='enforce_unique',
-            field=models.BooleanField(default=True, help_text=b'Prevent duplicate prefixes/IP addresses within this VRF', verbose_name=b'Enforce unique space'),
+            field=models.BooleanField(
+                default=True, help_text=b'Prevent duplicate prefixes/IP addresses within this VRF', verbose_name=b'Enforce unique space'),
         ),
     ]

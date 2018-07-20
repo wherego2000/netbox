@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 from django import template
-
 from extras.models import ExportTemplate
 
 register = template.Library()
@@ -24,3 +23,8 @@ def export_button(context, content_type=None):
         'url_params': context['request'].GET,
         'export_templates': export_templates,
     }
+
+
+@register.inclusion_tag('buttons/post.html')
+def post_button(url):
+    return {'post_url': url}

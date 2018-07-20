@@ -1,0 +1,165 @@
+{% load static from staticfiles %}
+
+<style>
+ .njg-tooltip{
+   font-size: 1.2em;
+ }
+ .njg-node.server, .njg-node.rhv, .njg-node.ceph{
+   stroke: #d52349;
+   stroke-opacity: 0.5;
+   stroke-width: 100px;
+   fill: none;
+ }
+ .njg-node.bmc{
+   stroke: #349;
+   stroke-opacity: 0.2;
+   stroke-width: 50px;
+ }
+ .njg-node.access-switch{
+   stroke: green;
+   stroke-opacity: 0.2;
+   stroke-width: 50px;
+ }
+ .njg-node.core-switch{
+   stroke: red;
+   stroke-opacity: 0.2;
+   stroke-width: 200px;
+ }
+</style>
+{% load helpers %}
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <strong>L1 Topology</strong>
+  </div>
+
+  <div id="topology"
+       class="row panel-body"></div>
+  <div class="panel-footer text-right">
+    <a href="{% url 'dcim:report_interface_connections' %}">
+      View full L1 report
+    </a>
+  </div>
+</div>
+
+{% if netjson_url %}
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <strong>Experimental</strong>
+  </div>
+  <div id="netjson-topology"
+       class="row panel-body"></div>
+</div>
+{% endif %}
+
+<script type="text/javascript">
+ $(document).ready(function(){
+   // compute height
+   var data = {{ topology|safe }};
+   var i = Math.ceil(data.length/200)+1;
+   var ideal_length = Math.floor(60*i);
+   $("#topology").height(i*50+"vh");
+   $("#netjson-topology").height(i*50+"vh");
+
+   // inter-switch topology graph
+   var cy = cytoscape({
+     container: document.getElementById('topology'),
+     elements: data,
+     style: [
+       {
+         selector: 'node',
+         style: {
+           'label': 'data(label)',
+           'color': '#d52349',
+           "background-color": "#337ab7",
+           /*            "font-size": "1.5em", */
+           "shape": "roundrectangle",
+           width:50
+         }
+       }, {
+         selector: 'edge',
+         style: {
+           'width': 1,
+           'line-color': '#ccc',
+           'target-arrow-color': '#ccc',
+           'curve-style' : 'haystack'
+         }
+       },
+       {// switch port styles
+         selector: "node[type = 'port']",
+        css: {
+          'background-color': '#fff',
+          'color': '#d52349',
+          "shape": "roundrectangle",
+          "background-image": "{% static 'img/switch port.png' %}",
+          "background-fit": "contain"
+        },
+       },
+       {// switch node styles
+         selector: "node[type = 'switch']",
+        css: {
+          'background-color': "#fefefe",
+          "color": "#353535",
+          "shape": "roundrectangle"
+        }
+       },
+       {// BMC node styles
+         selector: "node[type = 'bmc']",
+        css: {
+          'background-color': "#5cb85c",
+          "color": "yellow",
+          "shape": "roundrectangle"
+        }
+       },
+       {// interface node styles
+         selector: "node[type = 'interface']",
+        css: {
+          'background-color': 'white',
+          "color": "white",
+          "background-fit": "contain",
+          "shape": "rectangle",
+          /*           "font-size": "1.5em" */
+        }
+       },
+       {
+         selector: ":parent",
+         style:{
+           /*            "background-opacity": 0.333 */
+         }
+       }
+     ],
+     layout: {
+       name: 'cose-bilkent',
+       fit: true,
+       idealEdgeLength: 200,
+       nestingFactor: 0.5,
+       gravity: 0.5,
+     },
+   });
+
+   cy.on('tap', 'node', function(){
+     try { // your browser may block popups
+       window.open( this.data('href') );
+     } catch(e){ // fall back on url change
+       window.location.href = this.data('href');
+     }
+   });
+
+   {% if netjson_url %}
+   d3.netJsonGraph(
+     "{{netjson_url}}", {
+       el: "#netjson-topology",
+       linkDistance: ideal_length > 800? ideal_length:800,
+       defaultStyle: true,
+       nodeClassProperty: "type",
+       linkClassProperty: "type",
+       onClickNode:function(me){
+         window.open(me.properties.href);
+       },
+       labelDy:"3.0em"
+     });
+   {% endif %}
+
+ });
+
+
+</script>

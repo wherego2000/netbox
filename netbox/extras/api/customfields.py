@@ -23,8 +23,10 @@ class CustomFieldsSerializer(serializers.BaseSerializer):
 
     def to_internal_value(self, data):
 
-        content_type = ContentType.objects.get_for_model(self.parent.Meta.model)
-        custom_fields = {field.name: field for field in CustomField.objects.filter(obj_type=content_type)}
+        content_type = ContentType.objects.get_for_model(
+            self.parent.Meta.model)
+        custom_fields = {field.name: field for field in CustomField.objects.filter(
+            obj_type=content_type)}
 
         for field_name, value in data.items():
 
@@ -32,7 +34,8 @@ class CustomFieldsSerializer(serializers.BaseSerializer):
                 cf = custom_fields[field_name]
             except KeyError:
                 raise ValidationError(
-                    "Invalid custom field for {} objects: {}".format(content_type, field_name)
+                    "Invalid custom field for {} objects: {}".format(
+                        content_type, field_name)
                 )
 
             # Data validation
@@ -44,13 +47,15 @@ class CustomFieldsSerializer(serializers.BaseSerializer):
                         int(value)
                     except ValueError:
                         raise ValidationError(
-                            "Invalid value for integer field {}: {}".format(field_name, value)
+                            "Invalid value for integer field {}: {}".format(
+                                field_name, value)
                         )
 
                 # Validate boolean
                 if cf.type == CF_TYPE_BOOLEAN and value not in [True, False, 1, 0]:
                     raise ValidationError(
-                        "Invalid value for boolean field {}: {}".format(field_name, value)
+                        "Invalid value for boolean field {}: {}".format(
+                            field_name, value)
                     )
 
                 # Validate date
@@ -59,7 +64,8 @@ class CustomFieldsSerializer(serializers.BaseSerializer):
                         datetime.strptime(value, '%Y-%m-%d')
                     except ValueError:
                         raise ValidationError(
-                            "Invalid date for field {}: {}. (Required format is YYYY-MM-DD.)".format(field_name, value)
+                            "Invalid date for field {}: {}. (Required format is YYYY-MM-DD.)".format(
+                                field_name, value)
                         )
 
                 # Validate selected choice
@@ -68,16 +74,19 @@ class CustomFieldsSerializer(serializers.BaseSerializer):
                         value = int(value)
                     except ValueError:
                         raise ValidationError(
-                            "{}: Choice selections must be passed as integers.".format(field_name)
+                            "{}: Choice selections must be passed as integers.".format(
+                                field_name)
                         )
                     valid_choices = [c.pk for c in cf.choices.all()]
                     if value not in valid_choices:
                         raise ValidationError(
-                            "Invalid choice for field {}: {}".format(field_name, value)
+                            "Invalid choice for field {}: {}".format(
+                                field_name, value)
                         )
 
             elif cf.required:
-                raise ValidationError("Required field {} cannot be empty.".format(field_name))
+                raise ValidationError(
+                    "Required field {} cannot be empty.".format(field_name))
 
         # Check for missing required fields
         missing_fields = []
@@ -85,7 +94,8 @@ class CustomFieldsSerializer(serializers.BaseSerializer):
             if field.required and field_name not in data:
                 missing_fields.append(field_name)
         if missing_fields:
-            raise ValidationError("Missing required fields: {}".format(u", ".join(missing_fields)))
+            raise ValidationError(
+                "Missing required fields: {}".format(u", ".join(missing_fields)))
 
         return data
 
@@ -102,7 +112,8 @@ class CustomFieldModelSerializer(ValidatedModelSerializer):
             custom_fields = {f.name: None for f in fields}
             for cfv in instance.custom_field_values.all():
                 if cfv.field.type == CF_TYPE_SELECT:
-                    custom_fields[cfv.field.name] = CustomFieldChoiceSerializer(cfv.value).data
+                    custom_fields[cfv.field.name] = CustomFieldChoiceSerializer(
+                        cfv.value).data
                 else:
                     custom_fields[cfv.field.name] = cfv.value
             instance.custom_fields = custom_fields
@@ -130,7 +141,8 @@ class CustomFieldModelSerializer(ValidatedModelSerializer):
                 field=custom_field,
                 obj_type=content_type,
                 obj_id=instance.pk,
-                defaults={'serialized_value': custom_field.serialize_value(value)},
+                defaults={
+                    'serialized_value': custom_field.serialize_value(value)},
             )
 
     def create(self, validated_data):
@@ -139,7 +151,8 @@ class CustomFieldModelSerializer(ValidatedModelSerializer):
 
         with transaction.atomic():
 
-            instance = super(CustomFieldModelSerializer, self).create(validated_data)
+            instance = super(CustomFieldModelSerializer,
+                             self).create(validated_data)
 
             # Save custom fields
             if custom_fields is not None:
@@ -154,7 +167,8 @@ class CustomFieldModelSerializer(ValidatedModelSerializer):
 
         with transaction.atomic():
 
-            instance = super(CustomFieldModelSerializer, self).update(instance, validated_data)
+            instance = super(CustomFieldModelSerializer, self).update(
+                instance, validated_data)
 
             # Save custom fields
             if custom_fields is not None:

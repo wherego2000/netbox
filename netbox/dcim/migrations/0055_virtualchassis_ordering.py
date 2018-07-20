@@ -15,11 +15,13 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AlterModelOptions(
             name='virtualchassis',
-            options={'ordering': ['master'], 'verbose_name_plural': 'virtual chassis'},
+            options={'ordering': ['master'],
+                     'verbose_name_plural': 'virtual chassis'},
         ),
         migrations.AlterField(
             model_name='virtualchassis',
             name='master',
-            field=models.OneToOneField(on_delete=django.db.models.deletion.PROTECT, related_name='vc_master_for', to='dcim.Device'),
+            field=models.OneToOneField(
+                on_delete=django.db.models.deletion.PROTECT, related_name='vc_master_for', to='dcim.Device'),
         ),
     ]

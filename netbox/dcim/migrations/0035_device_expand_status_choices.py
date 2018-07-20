@@ -17,11 +17,13 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='device',
             name='status',
-            field=models.PositiveIntegerField(choices=[[1, b'Active'], [0, b'Offline'], [2, b'Planned'], [3, b'Staged'], [4, b'Failed'], [5, b'Inventory']], default=1, verbose_name=b'Status'),
+            field=models.PositiveIntegerField(choices=[[1, b'Active'], [0, b'Offline'], [2, b'Planned'], [
+                                              3, b'Staged'], [4, b'Failed'], [5, b'Inventory']], default=1, verbose_name=b'Status'),
         ),
         migrations.AlterField(
             model_name='device',
             name='status',
-            field=models.PositiveSmallIntegerField(choices=[[1, b'Active'], [0, b'Offline'], [2, b'Planned'], [3, b'Staged'], [4, b'Failed'], [5, b'Inventory']], default=1, verbose_name=b'Status'),
+            field=models.PositiveSmallIntegerField(choices=[[1, b'Active'], [0, b'Offline'], [2, b'Planned'], [
+                                                   3, b'Staged'], [4, b'Failed'], [5, b'Inventory']], default=1, verbose_name=b'Status'),
         ),
     ]

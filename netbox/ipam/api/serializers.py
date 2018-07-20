@@ -62,7 +62,8 @@ class RoleSerializer(ValidatedModelSerializer):
 
 
 class NestedRoleSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='ipam-api:role-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='ipam-api:role-detail')
 
     class Meta:
         model = Role
@@ -103,7 +104,8 @@ class AggregateSerializer(CustomFieldModelSerializer):
 
 
 class NestedAggregateSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='ipam-api:aggregate-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='ipam-api:aggregate-detail')
 
     class Meta(AggregateSerializer.Meta):
         model = Aggregate
@@ -114,7 +116,8 @@ class WritableAggregateSerializer(CustomFieldModelSerializer):
 
     class Meta:
         model = Aggregate
-        fields = ['id', 'prefix', 'rir', 'date_added', 'description', 'custom_fields', 'created', 'last_updated']
+        fields = ['id', 'prefix', 'rir', 'date_added', 'description',
+                  'custom_fields', 'created', 'last_updated']
 
 
 #
@@ -130,7 +133,8 @@ class VLANGroupSerializer(serializers.ModelSerializer):
 
 
 class NestedVLANGroupSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='ipam-api:vlangroup-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='ipam-api:vlangroup-detail')
 
     class Meta:
         model = VLANGroup
@@ -149,7 +153,8 @@ class WritableVLANGroupSerializer(serializers.ModelSerializer):
         # Validate uniqueness of name and slug if a site has been assigned.
         if data.get('site', None):
             for field in ['name', 'slug']:
-                validator = UniqueTogetherValidator(queryset=VLANGroup.objects.all(), fields=('site', field))
+                validator = UniqueTogetherValidator(
+                    queryset=VLANGroup.objects.all(), fields=('site', field))
                 validator.set_context(self)
                 validator(data)
 
@@ -179,7 +184,8 @@ class VLANSerializer(CustomFieldModelSerializer):
 
 
 class NestedVLANSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='ipam-api:vlan-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='ipam-api:vlan-detail')
 
     class Meta:
         model = VLAN
@@ -201,7 +207,8 @@ class WritableVLANSerializer(CustomFieldModelSerializer):
         # Validate uniqueness of vid and name if a group has been assigned.
         if data.get('group', None):
             for field in ['vid', 'name']:
-                validator = UniqueTogetherValidator(queryset=VLAN.objects.all(), fields=('group', field))
+                validator = UniqueTogetherValidator(
+                    queryset=VLAN.objects.all(), fields=('group', field))
                 validator.set_context(self)
                 validator(data)
 
@@ -232,7 +239,8 @@ class PrefixSerializer(CustomFieldModelSerializer):
 
 
 class NestedPrefixSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='ipam-api:prefix-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='ipam-api:prefix-detail')
 
     class Meta:
         model = Prefix
@@ -253,7 +261,8 @@ class AvailablePrefixSerializer(serializers.Serializer):
 
     def to_representation(self, instance):
         if self.context.get('vrf'):
-            vrf = NestedVRFSerializer(self.context['vrf'], context={'request': self.context['request']}).data
+            vrf = NestedVRFSerializer(self.context['vrf'], context={
+                                      'request': self.context['request']}).data
         else:
             vrf = None
         return OrderedDict([
@@ -268,7 +277,8 @@ class AvailablePrefixSerializer(serializers.Serializer):
 #
 
 class IPAddressInterfaceSerializer(serializers.ModelSerializer):
-    url = serializers.SerializerMethodField()  # We're imitating a HyperlinkedIdentityField here
+    # We're imitating a HyperlinkedIdentityField here
+    url = serializers.SerializerMethodField()
     device = NestedDeviceSerializer()
     virtual_machine = NestedVirtualMachineSerializer()
 
@@ -303,15 +313,18 @@ class IPAddressSerializer(CustomFieldModelSerializer):
 
 
 class NestedIPAddressSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='ipam-api:ipaddress-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='ipam-api:ipaddress-detail')
 
     class Meta:
         model = IPAddress
         fields = ['id', 'url', 'family', 'address']
 
 
-IPAddressSerializer._declared_fields['nat_inside'] = NestedIPAddressSerializer()
-IPAddressSerializer._declared_fields['nat_outside'] = NestedIPAddressSerializer()
+IPAddressSerializer._declared_fields['nat_inside'] = NestedIPAddressSerializer(
+)
+IPAddressSerializer._declared_fields['nat_outside'] = NestedIPAddressSerializer(
+)
 
 
 class WritableIPAddressSerializer(CustomFieldModelSerializer):
@@ -328,12 +341,14 @@ class AvailableIPSerializer(serializers.Serializer):
 
     def to_representation(self, instance):
         if self.context.get('vrf'):
-            vrf = NestedVRFSerializer(self.context['vrf'], context={'request': self.context['request']}).data
+            vrf = NestedVRFSerializer(self.context['vrf'], context={
+                                      'request': self.context['request']}).data
         else:
             vrf = None
         return OrderedDict([
             ('family', self.context['prefix'].version),
-            ('address', '{}/{}'.format(instance, self.context['prefix'].prefixlen)),
+            ('address', '{}/{}'.format(instance,
+                                       self.context['prefix'].prefixlen)),
             ('vrf', vrf),
         ])
 

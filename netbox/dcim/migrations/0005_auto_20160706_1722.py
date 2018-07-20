@@ -16,11 +16,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='interface',
             name='mac_address',
-            field=dcim.fields.MACAddressField(blank=True, null=True, verbose_name=b'MAC Address'),
+            field=dcim.fields.MACAddressField(
+                blank=True, null=True, verbose_name=b'MAC Address'),
         ),
         migrations.AlterField(
             model_name='devicetype',
             name='subdevice_role',
-            field=models.NullBooleanField(choices=[(None, b'None'), (True, b'Parent'), (False, b'Child')], default=None, help_text=b'Parent devices house child devices in device bays. Select "None" if this device type is neither a parent nor a child.', verbose_name=b'Parent/child status'),
+            field=models.NullBooleanField(choices=[(None, b'None'), (True, b'Parent'), (False, b'Child')], default=None,
+                                          help_text=b'Parent devices house child devices in device bays. Select "None" if this device type is neither a parent nor a child.', verbose_name=b'Parent/child status'),
         ),
     ]

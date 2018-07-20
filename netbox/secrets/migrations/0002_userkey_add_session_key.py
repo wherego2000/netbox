@@ -17,7 +17,8 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='SessionKey',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.AutoField(auto_created=True,
+                                        primary_key=True, serialize=False, verbose_name='ID')),
                 ('cipher', models.BinaryField(max_length=512)),
                 ('hash', models.CharField(editable=False, max_length=128)),
                 ('created', models.DateTimeField(auto_now_add=True)),
@@ -29,11 +30,13 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='userkey',
             name='user',
-            field=models.OneToOneField(editable=False, on_delete=django.db.models.deletion.CASCADE, related_name='user_key', to=settings.AUTH_USER_MODEL),
+            field=models.OneToOneField(editable=False, on_delete=django.db.models.deletion.CASCADE,
+                                       related_name='user_key', to=settings.AUTH_USER_MODEL),
         ),
         migrations.AddField(
             model_name='sessionkey',
             name='userkey',
-            field=models.OneToOneField(editable=False, on_delete=django.db.models.deletion.CASCADE, related_name='session_key', to='secrets.UserKey'),
+            field=models.OneToOneField(
+                editable=False, on_delete=django.db.models.deletion.CASCADE, related_name='session_key', to='secrets.UserKey'),
         ),
     ]

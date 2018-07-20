@@ -11,7 +11,8 @@ def rpc_client_to_napalm_driver(apps, schema_editor):
     """
     Platform = apps.get_model('dcim', 'Platform')
 
-    Platform.objects.filter(rpc_client='juniper-junos').update(napalm_driver='junos')
+    Platform.objects.filter(
+        rpc_client='juniper-junos').update(napalm_driver='junos')
     Platform.objects.filter(rpc_client='cisco-ios').update(napalm_driver='ios')
 
 
@@ -24,17 +25,20 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AlterModelOptions(
             name='device',
-            options={'ordering': ['name'], 'permissions': (('napalm_read', 'Read-only access to devices via NAPALM'), ('napalm_write', 'Read/write access to devices via NAPALM'))},
+            options={'ordering': ['name'], 'permissions': (
+                ('napalm_read', 'Read-only access to devices via NAPALM'), ('napalm_write', 'Read/write access to devices via NAPALM'))},
         ),
         migrations.AddField(
             model_name='platform',
             name='napalm_driver',
-            field=models.CharField(blank=True, help_text='The name of the NAPALM driver to use when interacting with devices.', max_length=50, verbose_name='NAPALM driver'),
+            field=models.CharField(blank=True, help_text='The name of the NAPALM driver to use when interacting with devices.',
+                                   max_length=50, verbose_name='NAPALM driver'),
         ),
         migrations.AlterField(
             model_name='platform',
             name='rpc_client',
-            field=models.CharField(blank=True, choices=[['juniper-junos', 'Juniper Junos (NETCONF)'], ['cisco-ios', 'Cisco IOS (SSH)'], ['opengear', 'Opengear (SSH)']], max_length=30, verbose_name='Legacy RPC client'),
+            field=models.CharField(blank=True, choices=[['juniper-junos', 'Juniper Junos (NETCONF)'], [
+                                   'cisco-ios', 'Cisco IOS (SSH)'], ['opengear', 'Opengear (SSH)']], max_length=30, verbose_name='Legacy RPC client'),
         ),
         migrations.RunPython(rpc_client_to_napalm_driver),
     ]

@@ -20,16 +20,19 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='inventoryitem',
             name='device',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='inventory_items', to='dcim.Device'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE,
+                                    related_name='inventory_items', to='dcim.Device'),
         ),
         migrations.AlterField(
             model_name='inventoryitem',
             name='parent',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='child_items', to='dcim.InventoryItem'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE,
+                                    related_name='child_items', to='dcim.InventoryItem'),
         ),
         migrations.AlterField(
             model_name='inventoryitem',
             name='manufacturer',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='inventory_items', to='dcim.Manufacturer'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT,
+                                    related_name='inventory_items', to='dcim.Manufacturer'),
         ),
     ]

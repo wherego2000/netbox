@@ -21,7 +21,8 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='site',
             name='status',
-            field=models.PositiveSmallIntegerField(choices=[[1, 'Active'], [2, 'Planned'], [4, 'Retired']], default=1),
+            field=models.PositiveSmallIntegerField(
+                choices=[[1, 'Active'], [2, 'Planned'], [4, 'Retired']], default=1),
         ),
         migrations.AddField(
             model_name='site',

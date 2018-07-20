@@ -16,11 +16,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='platform',
             name='manufacturer',
-            field=models.ForeignKey(blank=True, help_text='Optionally limit this platform to devices of a certain manufacturer', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='platforms', to='dcim.Manufacturer'),
+            field=models.ForeignKey(blank=True, help_text='Optionally limit this platform to devices of a certain manufacturer',
+                                    null=True, on_delete=django.db.models.deletion.CASCADE, related_name='platforms', to='dcim.Manufacturer'),
         ),
         migrations.AlterField(
             model_name='platform',
             name='napalm_driver',
-            field=models.CharField(blank=True, help_text='The name of the NAPALM driver to use when interacting with devices', max_length=50, verbose_name='NAPALM driver'),
+            field=models.CharField(blank=True, help_text='The name of the NAPALM driver to use when interacting with devices',
+                                   max_length=50, verbose_name='NAPALM driver'),
         ),
     ]

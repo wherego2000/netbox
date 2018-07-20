@@ -84,7 +84,8 @@ class RackTestCase(TestCase):
 
         device1 = Device(
             name='TestSwitch1',
-            device_type=DeviceType.objects.get(manufacturer__slug='acme', slug='ff2048'),
+            device_type=DeviceType.objects.get(
+                manufacturer__slug='acme', slug='ff2048'),
             device_role=DeviceRole.objects.get(slug='switch'),
             site=self.site1,
             rack=rack1,
@@ -114,7 +115,8 @@ class RackTestCase(TestCase):
 
         device1 = Device(
             name='TestSwitch1',
-            device_type=DeviceType.objects.get(manufacturer__slug='acme', slug='ff2048'),
+            device_type=DeviceType.objects.get(
+                manufacturer__slug='acme', slug='ff2048'),
             device_role=DeviceRole.objects.get(slug='switch'),
             site=self.site1,
             rack=self.rack,
@@ -219,7 +221,8 @@ class InterfaceTestCase(TestCase):
 
         self.assertEqual(
             list(Interface.objects.all().order_naturally()),
-            [interface1, interface5, interface4, interface3, interface2, interface6]
+            [interface1, interface5, interface4,
+                interface3, interface2, interface6]
         )
 
     def test_interface_order_natural_subinterfaces(self):
@@ -258,5 +261,6 @@ class InterfaceTestCase(TestCase):
         )
         self.assertEqual(
             list(Interface.objects.all().order_naturally()),
-            [interface4, interface3, interface5, interface2, interface1, interface6]
+            [interface4, interface3, interface5,
+                interface2, interface1, interface6]
         )

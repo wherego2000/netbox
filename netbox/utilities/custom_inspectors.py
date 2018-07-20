@@ -10,7 +10,8 @@ class CustomChoiceFieldInspector(FieldInspector):
     def field_to_swagger_object(self, field, swagger_object_type, use_references, **kwargs):
         # this returns a callable which extracts title, description and other stuff
         # https://drf-yasg.readthedocs.io/en/stable/_modules/drf_yasg/inspectors/base.html#FieldInspector._get_partial_types
-        SwaggerType, _ = self._get_partial_types(field, swagger_object_type, use_references, **kwargs)
+        SwaggerType, _ = self._get_partial_types(
+            field, swagger_object_type, use_references, **kwargs)
 
         if isinstance(field, ChoiceFieldSerializer):
             value_schema = openapi.Schema(type=openapi.TYPE_INTEGER)
@@ -56,7 +57,8 @@ class NullableBooleanFieldInspector(FieldInspector):
 class IdInFilterInspector(FilterInspector):
     def process_result(self, result, method_name, obj, **kwargs):
         if isinstance(result, list):
-            params = [p for p in result if isinstance(p, openapi.Parameter) and p.name == 'id__in']
+            params = [p for p in result if isinstance(
+                p, openapi.Parameter) and p.name == 'id__in']
             for p in params:
                 p.type = 'string'
 

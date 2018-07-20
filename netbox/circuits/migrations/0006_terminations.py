@@ -46,15 +46,19 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='CircuitTermination',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.AutoField(auto_created=True,
+                                        primary_key=True, serialize=False, verbose_name='ID')),
                 ('term_side', models.CharField(choices=[(b'A', b'A'), (b'Z', b'Z')], max_length=1,
                                                verbose_name='Termination')),
-                ('port_speed', models.PositiveIntegerField(verbose_name=b'Port speed (Kbps)')),
+                ('port_speed', models.PositiveIntegerField(
+                    verbose_name=b'Port speed (Kbps)')),
                 ('upstream_speed',
                  models.PositiveIntegerField(blank=True, help_text=b'Upstream speed, if different from port speed',
                                              null=True, verbose_name=b'Upstream speed (Kbps)')),
-                ('xconnect_id', models.CharField(blank=True, max_length=50, verbose_name=b'Cross-connect ID')),
-                ('pp_info', models.CharField(blank=True, max_length=100, verbose_name=b'Patch panel/port(s)')),
+                ('xconnect_id', models.CharField(blank=True,
+                                                 max_length=50, verbose_name=b'Cross-connect ID')),
+                ('pp_info', models.CharField(blank=True,
+                                             max_length=100, verbose_name=b'Patch panel/port(s)')),
                 ('circuit', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='terminations',
                                               to='circuits.Circuit')),
                 ('interface', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE,

@@ -21,7 +21,8 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Cluster',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.AutoField(auto_created=True,
+                                        primary_key=True, serialize=False, verbose_name='ID')),
                 ('created', models.DateField(auto_now_add=True)),
                 ('last_updated', models.DateTimeField(auto_now=True)),
                 ('name', models.CharField(max_length=100, unique=True)),
@@ -35,7 +36,8 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='ClusterGroup',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.AutoField(auto_created=True,
+                                        primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=50, unique=True)),
                 ('slug', models.SlugField(unique=True)),
             ],
@@ -46,7 +48,8 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='ClusterType',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.AutoField(auto_created=True,
+                                        primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=50, unique=True)),
                 ('slug', models.SlugField(unique=True)),
             ],
@@ -57,19 +60,28 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='VirtualMachine',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.AutoField(auto_created=True,
+                                        primary_key=True, serialize=False, verbose_name='ID')),
                 ('created', models.DateField(auto_now_add=True)),
                 ('last_updated', models.DateTimeField(auto_now=True)),
                 ('name', models.CharField(max_length=64, unique=True)),
-                ('vcpus', models.PositiveSmallIntegerField(blank=True, null=True, verbose_name='vCPUs')),
-                ('memory', models.PositiveIntegerField(blank=True, null=True, verbose_name='Memory (MB)')),
-                ('disk', models.PositiveIntegerField(blank=True, null=True, verbose_name='Disk (GB)')),
+                ('vcpus', models.PositiveSmallIntegerField(
+                    blank=True, null=True, verbose_name='vCPUs')),
+                ('memory', models.PositiveIntegerField(
+                    blank=True, null=True, verbose_name='Memory (MB)')),
+                ('disk', models.PositiveIntegerField(
+                    blank=True, null=True, verbose_name='Disk (GB)')),
                 ('comments', models.TextField(blank=True)),
-                ('cluster', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='virtual_machines', to='virtualization.Cluster')),
-                ('platform', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='virtual_machines', to='dcim.Platform')),
-                ('primary_ip4', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='+', to='ipam.IPAddress', verbose_name='Primary IPv4')),
-                ('primary_ip6', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='+', to='ipam.IPAddress', verbose_name='Primary IPv6')),
-                ('tenant', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='virtual_machines', to='tenancy.Tenant')),
+                ('cluster', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT,
+                                              related_name='virtual_machines', to='virtualization.Cluster')),
+                ('platform', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                               related_name='virtual_machines', to='dcim.Platform')),
+                ('primary_ip4', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                                     related_name='+', to='ipam.IPAddress', verbose_name='Primary IPv4')),
+                ('primary_ip6', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                                     related_name='+', to='ipam.IPAddress', verbose_name='Primary IPv6')),
+                ('tenant', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT,
+                                             related_name='virtual_machines', to='tenancy.Tenant')),
             ],
             options={
                 'ordering': ['name'],
@@ -79,11 +91,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='cluster',
             name='group',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='clusters', to='virtualization.ClusterGroup'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT,
+                                    related_name='clusters', to='virtualization.ClusterGroup'),
         ),
         migrations.AddField(
             model_name='cluster',
             name='type',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='clusters', to='virtualization.ClusterType'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT,
+                                    related_name='clusters', to='virtualization.ClusterType'),
         ),
     ]

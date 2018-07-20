@@ -19,7 +19,6 @@ from . import serializers
 
 class CircuitsFieldChoicesViewSet(FieldChoicesViewSet):
     fields = (
-        (Circuit, ['status']),
         (CircuitTermination, ['term_side']),
     )
 
@@ -41,7 +40,8 @@ class ProviderViewSet(CustomFieldModelViewSet):
         """
         provider = get_object_or_404(Provider, pk=pk)
         queryset = Graph.objects.filter(type=GRAPH_TYPE_PROVIDER)
-        serializer = RenderedGraphSerializer(queryset, many=True, context={'graphed_object': provider})
+        serializer = RenderedGraphSerializer(queryset, many=True, context={
+                                             'graphed_object': provider})
         return Response(serializer.data)
 
 
@@ -71,7 +71,8 @@ class CircuitViewSet(CustomFieldModelViewSet):
 #
 
 class CircuitTerminationViewSet(ModelViewSet):
-    queryset = CircuitTermination.objects.select_related('circuit', 'site', 'interface__device')
+    queryset = CircuitTermination.objects.select_related(
+        'circuit', 'site', 'interface__device')
     serializer_class = serializers.CircuitTerminationSerializer
     write_serializer_class = serializers.WritableCircuitTerminationSerializer
     filter_class = filters.CircuitTerminationFilter

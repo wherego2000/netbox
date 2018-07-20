@@ -53,7 +53,8 @@ class VirtualMachineViewSet(CustomFieldModelViewSet):
 
 
 class InterfaceViewSet(ModelViewSet):
-    queryset = Interface.objects.filter(virtual_machine__isnull=False).select_related('virtual_machine')
+    queryset = Interface.objects.filter(
+        virtual_machine__isnull=False).select_related('virtual_machine')
     serializer_class = serializers.InterfaceSerializer
     write_serializer_class = serializers.WritableInterfaceSerializer
     filter_class = filters.InterfaceFilter

@@ -21,7 +21,8 @@ class PasswordChangeForm(BootstrapMixin, DjangoPasswordChangeForm):
 
 
 class TokenForm(BootstrapMixin, forms.ModelForm):
-    key = forms.CharField(required=False, help_text="If no key is provided, one will be generated automatically.")
+    key = forms.CharField(
+        required=False, help_text="If no key is provided, one will be generated automatically.")
 
     class Meta:
         model = Token

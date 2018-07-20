@@ -21,11 +21,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='service',
             name='virtual_machine',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='services', to='virtualization.VirtualMachine'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE,
+                                    related_name='services', to='virtualization.VirtualMachine'),
         ),
         migrations.AlterField(
             model_name='service',
             name='device',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='services', to='dcim.Device', verbose_name='device'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE,
+                                    related_name='services', to='dcim.Device', verbose_name='device'),
         ),
     ]

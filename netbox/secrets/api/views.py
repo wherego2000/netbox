@@ -1,6 +1,12 @@
 from __future__ import unicode_literals
 
 import base64
+from secrets import filters
+from secrets.exceptions import InvalidKey
+from secrets.models import Secret
+from secrets.models import SecretRole
+from secrets.models import SessionKey
+from secrets.models import UserKey
 
 from Crypto.PublicKey import RSA
 from django.http import HttpResponseBadRequest
@@ -9,10 +15,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
-from secrets import filters
-from secrets.exceptions import InvalidKey
-from secrets.models import Secret, SecretRole, SessionKey, UserKey
-from utilities.api import FieldChoicesViewSet, ModelViewSet
+from utilities.api import FieldChoicesViewSet
+from utilities.api import ModelViewSet
+
 from . import serializers
 
 ERR_USERKEY_MISSING = "No UserKey found for the current user."
@@ -58,7 +63,8 @@ class SecretViewSet(ModelViewSet):
 
     def get_serializer_context(self):
 
-        # Make the master key available to the serializer for encrypting plaintext values
+        # Make the master key available to the serializer for
+        # encrypting plaintext values
         context = super(SecretViewSet, self).get_serializer_context()
         context['master_key'] = self.master_key
 
@@ -70,20 +76,24 @@ class SecretViewSet(ModelViewSet):
 
         if request.user.is_authenticated():
 
-            # Read session key from HTTP cookie or header if it has been provided. The session key must be provided in
-            # order to encrypt/decrypt secrets.
+            # Read session key from HTTP cookie or header if it has
+            # been provided. The session key must be provided in order
+            # to encrypt/decrypt secrets.
             if 'session_key' in request.COOKIES:
                 session_key = base64.b64decode(request.COOKIES['session_key'])
             elif 'HTTP_X_SESSION_KEY' in request.META:
-                session_key = base64.b64decode(request.META['HTTP_X_SESSION_KEY'])
+                session_key = base64.b64decode(
+                    request.META['HTTP_X_SESSION_KEY'])
             else:
                 session_key = None
 
             # We can't encrypt secret plaintext without a session key.
             if self.action in ['create', 'update'] and session_key is None:
-                raise ValidationError("A session key must be provided when creating or updating secrets.")
+                raise ValidationError(
+                    "A session key must be provided when creating or updating secrets.")
 
-            # Attempt to retrieve the master key for encryption/decryption if a session key has been provided.
+            # Attempt to retrieve the master key for encryption/decryption if a
+            # session key has been provided.
             if session_key is not None:
                 try:
                     sk = SessionKey.objects.get(userkey__user=request.user)
@@ -127,20 +137,24 @@ class SecretViewSet(ModelViewSet):
 
 class GetSessionKeyViewSet(ViewSet):
     """
-    Retrieve a temporary session key to use for encrypting and decrypting secrets via the API. The user's private RSA
-    key is POSTed with the name `private_key`. An example:
+    Retrieve a temporary session key to use for encrypting and
+    decrypting secrets via the API. The user's private RSA key is
+    POSTed with the name `private_key`. An example:
 
-        curl -v -X POST -H "Authorization: Token <token>" -H "Accept: application/json; indent=4" \\
-        --data-urlencode "private_key@<filename>" https://netbox/api/secrets/get-session-key/
+        curl -v -X POST -H "Authorization: Token <token>" -H "Accept:
+        application/json; indent=4" \\ --data-urlencode
+        "private_key@<filename>"
+        https://netbox/api/secrets/get-session-key/
 
-    This request will yield a base64-encoded session key to be included in an `X-Session-Key` header in future requests:
+    This request will yield a base64-encoded session key to be
+    included in an `X-Session-Key` header in future requests:
 
-        {
-            "session_key": "+8t4SI6XikgVmB5+/urhozx9O5qCQANyOk1MNe6taRf="
-        }
+        { "session_key":
+            "+8t4SI6XikgVmB5+/urhozx9O5qCQANyOk1MNe6taRf=" }
 
-    This endpoint accepts one optional parameter: `preserve_key`. If True and a session key exists, the existing session
-    key will be returned instead of a new one.
+    This endpoint accepts one optional parameter: `preserve_key`. If
+    True and a session key exists, the existing session key will be
+    returned instead of a new one.
     """
     permission_classes = [IsAuthenticated]
 
@@ -165,7 +179,8 @@ class GetSessionKeyViewSet(ViewSet):
             return HttpResponseBadRequest(ERR_PRIVKEY_INVALID)
 
         try:
-            current_session_key = SessionKey.objects.get(userkey__user_id=request.user.pk)
+            current_session_key = SessionKey.objects.get(
+                userkey__user_id=request.user.pk)
         except SessionKey.DoesNotExist:
             current_session_key = None
 

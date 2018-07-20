@@ -14,6 +14,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AlterModelOptions(
             name='prefix',
-            options={'ordering': ['vrf', 'family', 'prefix'], 'verbose_name_plural': 'prefixes'},
+            options={'ordering': ['vrf', 'family', 'prefix'],
+                     'verbose_name_plural': 'prefixes'},
         ),
     ]

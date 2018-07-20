@@ -19,12 +19,16 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='RackReservation',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('units', django.contrib.postgres.fields.ArrayField(base_field=models.PositiveSmallIntegerField(), size=None)),
+                ('id', models.AutoField(auto_created=True,
+                                        primary_key=True, serialize=False, verbose_name='ID')),
+                ('units', django.contrib.postgres.fields.ArrayField(
+                    base_field=models.PositiveSmallIntegerField(), size=None)),
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('description', models.CharField(max_length=100)),
-                ('rack', models.ForeignKey(editable=False, on_delete=django.db.models.deletion.CASCADE, related_name='reservations', to='dcim.Rack')),
-                ('user', models.ForeignKey(editable=False, on_delete=django.db.models.deletion.PROTECT, to=settings.AUTH_USER_MODEL)),
+                ('rack', models.ForeignKey(editable=False, on_delete=django.db.models.deletion.CASCADE,
+                                           related_name='reservations', to='dcim.Rack')),
+                ('user', models.ForeignKey(editable=False,
+                                           on_delete=django.db.models.deletion.PROTECT, to=settings.AUTH_USER_MODEL)),
             ],
             options={
                 'ordering': ['created'],

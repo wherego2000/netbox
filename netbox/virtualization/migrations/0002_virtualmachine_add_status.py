@@ -15,6 +15,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='virtualmachine',
             name='status',
-            field=models.PositiveSmallIntegerField(choices=[[1, 'Active'], [0, 'Offline'], [3, 'Staged']], default=1, verbose_name='Status'),
+            field=models.PositiveSmallIntegerField(choices=[[1, 'Active'], [0, 'Offline'], [
+                                                   3, 'Staged']], default=1, verbose_name='Status'),
         ),
     ]

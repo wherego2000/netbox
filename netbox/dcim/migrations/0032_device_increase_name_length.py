@@ -16,6 +16,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='device',
             name='name',
-            field=utilities.fields.NullableCharField(blank=True, max_length=64, null=True, unique=True),
+            field=utilities.fields.NullableCharField(
+                blank=True, max_length=64, null=True, unique=True),
         ),
     ]

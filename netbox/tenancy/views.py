@@ -1,25 +1,42 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth.mixins import PermissionRequiredMixin
-from django.db.models import Count, Q
-from django.shortcuts import get_object_or_404, render
+from django.db.models import Count
+from django.db.models import Q
+from django.shortcuts import get_object_or_404
+from django.shortcuts import render
 from django.urls import reverse
 from django.views.generic import View
 
 from circuits.models import Circuit
-from dcim.models import Site, Rack, Device, RackReservation
-from ipam.models import IPAddress, Prefix, VLAN, VRF
-from utilities.views import (
-    BulkDeleteView, BulkEditView, BulkImportView, ObjectDeleteView, ObjectEditView, ObjectListView,
-)
+from dcim.models import Device
+from dcim.models import InterfaceConnection
+from dcim.models import Rack
+from dcim.models import RackReservation
+from dcim.models import Site
+from ipam.models import VLAN
+from ipam.models import VRF
+from ipam.models import IPAddress
+from ipam.models import Prefix
+from utilities.utils import draw_level_1_interface_connections_cytoscape
+from utilities.views import BulkDeleteView
+from utilities.views import BulkEditView
+from utilities.views import BulkImportView
+from utilities.views import ObjectDeleteView
+from utilities.views import ObjectEditView
+from utilities.views import ObjectListView
 from virtualization.models import VirtualMachine
-from . import filters, forms, tables
-from .models import Tenant, TenantGroup
 
+from . import filters
+from . import forms
+from . import tables
+from .models import Tenant
+from .models import TenantGroup
 
 #
 # Tenant groups
 #
+
 
 class TenantGroupListView(ObjectListView):
     queryset = TenantGroup.objects.annotate(tenant_count=Count('tenants'))
@@ -78,16 +95,30 @@ class TenantView(View):
             'rackreservation_count': RackReservation.objects.filter(tenant=tenant).count(),
             'device_count': Device.objects.filter(tenant=tenant).count(),
             'vrf_count': VRF.objects.filter(tenant=tenant).count(),
-            'prefix_count': Prefix.objects.filter(tenant=tenant).count(),
-            'ipaddress_count': IPAddress.objects.filter(tenant=tenant).count(),
+            'prefix_count': Prefix.objects.filter(
+                Q(tenant=tenant) |
+                Q(tenant__isnull=True, vrf__tenant=tenant)
+            ).count(),
+            'ipaddress_count': IPAddress.objects.filter(
+                Q(tenant=tenant) |
+                Q(tenant__isnull=True, vrf__tenant=tenant)
+            ).count(),
             'vlan_count': VLAN.objects.filter(tenant=tenant).count(),
             'circuit_count': Circuit.objects.filter(tenant=tenant).count(),
             'virtualmachine_count': VirtualMachine.objects.filter(tenant=tenant).count(),
         }
 
+        # Draw network topology by vlan.
+        devices = tenant.devices.all()
+        connections = InterfaceConnection.objects.filter(
+            Q(interface_a__device__in=devices) |
+            Q(interface_b__device__in=devices))
+        topology = draw_level_1_interface_connections_cytoscape(connections)
+
         return render(request, 'tenancy/tenant.html', {
             'tenant': tenant,
             'stats': stats,
+            "topology": topology
         })
 
 

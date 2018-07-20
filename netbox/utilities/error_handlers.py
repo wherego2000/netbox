@@ -31,7 +31,8 @@ def handle_protectederror(obj, request, e):
     dependent_objects = []
     for obj in e.protected_objects:
         if hasattr(obj, 'get_absolute_url'):
-            dependent_objects.append('<a href="{}">{}</a>'.format(obj.get_absolute_url(), escape(obj)))
+            dependent_objects.append(
+                '<a href="{}">{}</a>'.format(obj.get_absolute_url(), escape(obj)))
         else:
             dependent_objects.append(str(obj))
     err_message += ', '.join(dependent_objects)

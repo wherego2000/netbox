@@ -1,14 +1,18 @@
 from __future__ import unicode_literals
 
 from django.conf import settings
-from django.conf.urls import include, url
+from django.conf.urls import include
+from django.conf.urls import url
 from django.contrib import admin
 from django.views.static import serve
-from drf_yasg.views import get_schema_view
-from drf_yasg import openapi
 
-from netbox.views import APIRootView, HomeView, SearchView
-from users.views import LoginView, LogoutView
+from drf_yasg import openapi
+from drf_yasg.views import get_schema_view
+from netbox.views import APIRootView
+from netbox.views import HomeView
+from netbox.views import SearchView
+from users.views import LoginView
+from users.views import LogoutView
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -33,6 +37,7 @@ _patterns = [
     url(r'^login/$', LoginView.as_view(), name='login'),
     url(r'^logout/$', LogoutView.as_view(), name='logout'),
 
+
     # Apps
     url(r'^circuits/', include('circuits.urls')),
     url(r'^dcim/', include('dcim.urls')),
@@ -52,12 +57,16 @@ _patterns = [
     url(r'^api/secrets/', include('secrets.api.urls')),
     url(r'^api/tenancy/', include('tenancy.api.urls')),
     url(r'^api/virtualization/', include('virtualization.api.urls')),
-    url(r'^api/docs/$', schema_view.with_ui('swagger'), name='api_docs'),
-    url(r'^api/redoc/$', schema_view.with_ui('redoc'), name='api_redocs'),
-    url(r'^api/swagger(?P<format>.json|.yaml)$', schema_view.without_ui(), name='schema_swagger'),
+    url(r'^api/docs/$', schema_view.with_ui('swagger',
+                                            cache_timeout=None), name='api_docs'),
+    url(r'^api/redoc/$', schema_view.with_ui('redoc',
+                                             cache_timeout=None), name='api_redocs'),
+    url(r'^api/swagger(?P<format>.json|.yaml)$',
+        schema_view.without_ui(cache_timeout=None), name='schema_swagger'),
 
     # Serving static media in Django to pipe it through LoginRequiredMiddleware
-    url(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
+    url(r'^media/(?P<path>.*)$', serve,
+        {'document_root': settings.MEDIA_ROOT}),
 
     # Admin
     url(r'^admin/', admin.site.urls),

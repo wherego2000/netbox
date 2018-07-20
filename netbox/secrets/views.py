@@ -109,7 +109,8 @@ def secret_add(request, pk):
 
             # We need a valid session key in order to create a Secret
             if session_key is None:
-                form.add_error(None, "No session key was provided with the request. Unable to encrypt secret data.")
+                form.add_error(
+                    None, "No session key was provided with the request. Unable to encrypt secret data.")
 
             # Create and encrypt the new Secret
             else:
@@ -125,7 +126,8 @@ def secret_add(request, pk):
                     secret.plaintext = str(form.cleaned_data['plaintext'])
                     secret.encrypt(master_key)
                     secret.save()
-                    messages.success(request, "Added new secret: {}.".format(secret))
+                    messages.success(
+                        request, "Added new secret: {}.".format(secret))
                     if '_addanother' in request.POST:
                         return redirect('dcim:device_addsecret', pk=device.pk)
                     else:
@@ -169,14 +171,17 @@ def secret_edit(request, pk):
                     secret.plaintext = form.cleaned_data['plaintext']
                     secret.encrypt(master_key)
                     secret.save()
-                    messages.success(request, "Modified secret {}.".format(secret))
+                    messages.success(
+                        request, "Modified secret {}.".format(secret))
                     return redirect('secrets:secret', pk=secret.pk)
                 else:
-                    form.add_error(None, "Invalid session key. Unable to encrypt secret data.")
+                    form.add_error(
+                        None, "Invalid session key. Unable to encrypt secret data.")
 
             # We can't save the plaintext without a session key.
             elif form.cleaned_data['plaintext']:
-                form.add_error(None, "No session key was provided with the request. Unable to encrypt secret data.")
+                form.add_error(
+                    None, "No session key was provided with the request. Unable to encrypt secret data.")
 
             # If no new plaintext was specified, a session key is not needed.
             else:
@@ -228,17 +233,20 @@ class SecretBulkImportView(BulkImportView):
             # Attempt to derive the master key using the provided session key.
             try:
                 sk = SessionKey.objects.get(userkey__user=request.user)
-                self.master_key = sk.get_master_key(base64.b64decode(session_key))
+                self.master_key = sk.get_master_key(
+                    base64.b64decode(session_key))
             except SessionKey.DoesNotExist:
                 messages.error(request, "No session key found for this user.")
 
             if self.master_key is not None:
                 return super(SecretBulkImportView, self).post(request)
             else:
-                messages.error(request, "Invalid private key! Unable to encrypt secret data.")
+                messages.error(
+                    request, "Invalid private key! Unable to encrypt secret data.")
 
         else:
-            messages.error(request, "No session key was provided with the request. Unable to encrypt secret data.")
+            messages.error(
+                request, "No session key was provided with the request. Unable to encrypt secret data.")
 
         return render(request, self.template_name, {
             'form': self._import_form(request.POST),

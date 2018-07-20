@@ -19,37 +19,44 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='device',
             name='primary_ip',
-            field=models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='primary_for', to='ipam.IPAddress', verbose_name=b'Primary IP'),
+            field=models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                       related_name='primary_for', to='ipam.IPAddress', verbose_name=b'Primary IP'),
         ),
         migrations.AddField(
             model_name='device',
             name='rack',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='devices', to='dcim.Rack'),
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT, related_name='devices', to='dcim.Rack'),
         ),
         migrations.AddField(
             model_name='consoleserverporttemplate',
             name='device_type',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='cs_port_templates', to='dcim.DeviceType'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE,
+                                    related_name='cs_port_templates', to='dcim.DeviceType'),
         ),
         migrations.AddField(
             model_name='consoleserverport',
             name='device',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='cs_ports', to='dcim.Device'),
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, related_name='cs_ports', to='dcim.Device'),
         ),
         migrations.AddField(
             model_name='consoleporttemplate',
             name='device_type',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='console_port_templates', to='dcim.DeviceType'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE,
+                                    related_name='console_port_templates', to='dcim.DeviceType'),
         ),
         migrations.AddField(
             model_name='consoleport',
             name='cs_port',
-            field=models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='connected_console', to='dcim.ConsoleServerPort', verbose_name=b'Console server port'),
+            field=models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                       related_name='connected_console', to='dcim.ConsoleServerPort', verbose_name=b'Console server port'),
         ),
         migrations.AddField(
             model_name='consoleport',
             name='device',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='console_ports', to='dcim.Device'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE,
+                                    related_name='console_ports', to='dcim.Device'),
         ),
         migrations.AlterUniqueTogether(
             name='rackgroup',
@@ -89,7 +96,8 @@ class Migration(migrations.Migration):
         ),
         migrations.AlterUniqueTogether(
             name='devicetype',
-            unique_together=set([('manufacturer', 'slug'), ('manufacturer', 'model')]),
+            unique_together=set(
+                [('manufacturer', 'slug'), ('manufacturer', 'model')]),
         ),
         migrations.AlterUniqueTogether(
             name='device',

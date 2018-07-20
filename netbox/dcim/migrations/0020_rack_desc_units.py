@@ -15,6 +15,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='rack',
             name='desc_units',
-            field=models.BooleanField(default=False, help_text=b'Units are numbered top-to-bottom', verbose_name=b'Descending units'),
+            field=models.BooleanField(
+                default=False, help_text=b'Units are numbered top-to-bottom', verbose_name=b'Descending units'),
         ),
     ]

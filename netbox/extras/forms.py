@@ -4,7 +4,6 @@ from collections import OrderedDict
 
 from django import forms
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ObjectDoesNotExist
 
 from utilities.forms import BootstrapMixin, BulkEditForm, LaxURLField
 from .constants import CF_FILTER_DISABLED, CF_TYPE_BOOLEAN, CF_TYPE_DATE, CF_TYPE_INTEGER, CF_TYPE_SELECT, CF_TYPE_URL
@@ -42,26 +41,22 @@ def get_custom_fields_for_model(content_type, filterable_only=False, bulk_edit=F
             else:
                 initial = None
             field = forms.NullBooleanField(
-                required=cf.required, initial=initial, widget=forms.Select(choices=choices)
+                required=cf.required, initial=initial, widget=forms.Select(
+                    choices=choices)
             )
 
         # Date
         elif cf.type == CF_TYPE_DATE:
-            field = forms.DateField(required=cf.required, initial=initial, help_text="Date format: YYYY-MM-DD")
+            field = forms.DateField(
+                required=cf.required, initial=initial, help_text="Date format: YYYY-MM-DD")
 
         # Select
         elif cf.type == CF_TYPE_SELECT:
             choices = [(cfc.pk, cfc) for cfc in cf.choices.all()]
             if not cf.required or bulk_edit or filterable_only:
                 choices = [(None, '---------')] + choices
-            # Check for a default choice
-            default_choice = None
-            if initial:
-                try:
-                    default_choice = cf.choices.get(value=initial).pk
-                except ObjectDoesNotExist:
-                    pass
-            field = forms.TypedChoiceField(choices=choices, coerce=int, required=cf.required, initial=default_choice)
+            field = forms.TypedChoiceField(
+                choices=choices, coerce=int, required=cf.required)
 
         # URL
         elif cf.type == CF_TYPE_URL:
@@ -69,10 +64,12 @@ def get_custom_fields_for_model(content_type, filterable_only=False, bulk_edit=F
 
         # Text
         else:
-            field = forms.CharField(max_length=255, required=cf.required, initial=initial)
+            field = forms.CharField(
+                max_length=255, required=cf.required, initial=initial)
 
         field.model = cf
-        field.label = cf.label if cf.label else cf.name.replace('_', ' ').capitalize()
+        field.label = cf.label if cf.label else cf.name.replace(
+            '_', ' ').capitalize()
         if cf.description:
             field.help_text = cf.description
 
@@ -102,7 +99,8 @@ class CustomFieldForm(forms.ModelForm):
             existing_values = CustomFieldValue.objects.filter(obj_type=self.obj_type, obj_id=self.instance.pk)\
                 .select_related('field')
             for cfv in existing_values:
-                self.initial['cf_{}'.format(str(cfv.field.name))] = cfv.serialized_value
+                self.initial['cf_{}'.format(
+                    str(cfv.field.name))] = cfv.serialized_value
 
     def _save_custom_fields(self):
 
@@ -144,7 +142,8 @@ class CustomFieldBulkEditForm(BulkEditForm):
         self.obj_type = ContentType.objects.get_for_model(self.model)
 
         # Add all applicable CustomFields to the form
-        custom_fields = get_custom_fields_for_model(self.obj_type, bulk_edit=True).items()
+        custom_fields = get_custom_fields_for_model(
+            self.obj_type, bulk_edit=True).items()
         for name, field in custom_fields:
             # Annotate non-required custom fields as nullable
             if not field.required:
@@ -164,7 +163,8 @@ class CustomFieldFilterForm(forms.Form):
         super(CustomFieldFilterForm, self).__init__(*args, **kwargs)
 
         # Add all applicable CustomFields to the form
-        custom_fields = get_custom_fields_for_model(self.obj_type, filterable_only=True).items()
+        custom_fields = get_custom_fields_for_model(
+            self.obj_type, filterable_only=True).items()
         for name, field in custom_fields:
             field.required = False
             self.fields[name] = field

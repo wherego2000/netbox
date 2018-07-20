@@ -21,13 +21,15 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Secret',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.AutoField(auto_created=True,
+                                        primary_key=True, serialize=False, verbose_name='ID')),
                 ('created', models.DateField(auto_now_add=True)),
                 ('last_updated', models.DateTimeField(auto_now=True)),
                 ('name', models.CharField(blank=True, max_length=100)),
                 ('ciphertext', models.BinaryField(max_length=65568)),
                 ('hash', models.CharField(editable=False, max_length=128)),
-                ('device', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='secrets', to='dcim.Device')),
+                ('device', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE,
+                                             related_name='secrets', to='dcim.Device')),
             ],
             options={
                 'ordering': ['device', 'role', 'name'],
@@ -36,11 +38,14 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='SecretRole',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.AutoField(auto_created=True,
+                                        primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=50, unique=True)),
                 ('slug', models.SlugField(unique=True)),
-                ('groups', models.ManyToManyField(blank=True, related_name='secretroles', to='auth.Group')),
-                ('users', models.ManyToManyField(blank=True, related_name='secretroles', to=settings.AUTH_USER_MODEL)),
+                ('groups', models.ManyToManyField(blank=True,
+                                                  related_name='secretroles', to='auth.Group')),
+                ('users', models.ManyToManyField(blank=True,
+                                                 related_name='secretroles', to=settings.AUTH_USER_MODEL)),
             ],
             options={
                 'ordering': ['name'],
@@ -49,12 +54,15 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='UserKey',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.AutoField(auto_created=True,
+                                        primary_key=True, serialize=False, verbose_name='ID')),
                 ('created', models.DateField(auto_now_add=True)),
                 ('last_updated', models.DateTimeField(auto_now=True)),
                 ('public_key', models.TextField(verbose_name=b'RSA public key')),
-                ('master_key_cipher', models.BinaryField(blank=True, max_length=512, null=True)),
-                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='user_key', to=settings.AUTH_USER_MODEL, verbose_name=b'User')),
+                ('master_key_cipher', models.BinaryField(
+                    blank=True, max_length=512, null=True)),
+                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE,
+                                              related_name='user_key', to=settings.AUTH_USER_MODEL, verbose_name=b'User')),
             ],
             options={
                 'ordering': ['user__username'],
@@ -64,7 +72,8 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='secret',
             name='role',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='secrets', to='secrets.SecretRole'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT,
+                                    related_name='secrets', to='secrets.SecretRole'),
         ),
         migrations.AlterUniqueTogether(
             name='secret',

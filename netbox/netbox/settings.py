@@ -21,8 +21,9 @@ if sys.version_info[0] < 3:
         "opportunity. Guidance is available in the documentation at http://netbox.readthedocs.io/.",
         DeprecationWarning
     )
+SITE_ID = 1
 
-VERSION = '2.3.7-dev'
+VERSION = '2.3.4-dev'
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -33,7 +34,8 @@ for setting in ['ALLOWED_HOSTS', 'DATABASE', 'SECRET_KEY']:
         globals()[setting] = getattr(configuration, setting)
     except AttributeError:
         raise ImproperlyConfigured(
-            "Mandatory setting {} is missing from configuration.py.".format(setting)
+            "Mandatory setting {} is missing from configuration.py.".format(
+                setting)
         )
 
 # Import optional configuration parameters
@@ -45,7 +47,8 @@ BASE_PATH = getattr(configuration, 'BASE_PATH', '')
 if BASE_PATH:
     BASE_PATH = BASE_PATH.strip('/') + '/'  # Enforce trailing slash only
 CORS_ORIGIN_ALLOW_ALL = getattr(configuration, 'CORS_ORIGIN_ALLOW_ALL', False)
-CORS_ORIGIN_REGEX_WHITELIST = getattr(configuration, 'CORS_ORIGIN_REGEX_WHITELIST', [])
+CORS_ORIGIN_REGEX_WHITELIST = getattr(
+    configuration, 'CORS_ORIGIN_REGEX_WHITELIST', [])
 CORS_ORIGIN_WHITELIST = getattr(configuration, 'CORS_ORIGIN_WHITELIST', [])
 DATE_FORMAT = getattr(configuration, 'DATE_FORMAT', 'N j, Y')
 DATETIME_FORMAT = getattr(configuration, 'DATETIME_FORMAT', 'N j, Y g:i a')
@@ -56,16 +59,19 @@ LOGGING = getattr(configuration, 'LOGGING', {})
 LOGIN_REQUIRED = getattr(configuration, 'LOGIN_REQUIRED', False)
 MAINTENANCE_MODE = getattr(configuration, 'MAINTENANCE_MODE', False)
 MAX_PAGE_SIZE = getattr(configuration, 'MAX_PAGE_SIZE', 1000)
-MEDIA_ROOT = getattr(configuration, 'MEDIA_ROOT', os.path.join(BASE_DIR, 'media')).rstrip('/')
+MEDIA_ROOT = getattr(configuration, 'MEDIA_ROOT',
+                     os.path.join(BASE_DIR, 'media')).rstrip('/')
 NAPALM_USERNAME = getattr(configuration, 'NAPALM_USERNAME', '')
 NAPALM_PASSWORD = getattr(configuration, 'NAPALM_PASSWORD', '')
 NAPALM_TIMEOUT = getattr(configuration, 'NAPALM_TIMEOUT', 30)
 NAPALM_ARGS = getattr(configuration, 'NAPALM_ARGS', {})
 PAGINATE_COUNT = getattr(configuration, 'PAGINATE_COUNT', 50)
 PREFER_IPV4 = getattr(configuration, 'PREFER_IPV4', False)
-REPORTS_ROOT = getattr(configuration, 'REPORTS_ROOT', os.path.join(BASE_DIR, 'reports')).rstrip('/')
+REPORTS_ROOT = getattr(configuration, 'REPORTS_ROOT',
+                       os.path.join(BASE_DIR, 'reports')).rstrip('/')
 SHORT_DATE_FORMAT = getattr(configuration, 'SHORT_DATE_FORMAT', 'Y-m-d')
-SHORT_DATETIME_FORMAT = getattr(configuration, 'SHORT_DATETIME_FORMAT', 'Y-m-d H:i')
+SHORT_DATETIME_FORMAT = getattr(
+    configuration, 'SHORT_DATETIME_FORMAT', 'Y-m-d H:i')
 SHORT_TIME_FORMAT = getattr(configuration, 'SHORT_TIME_FORMAT', 'H:i:s')
 TIME_FORMAT = getattr(configuration, 'TIME_FORMAT', 'g:i a')
 TIME_ZONE = getattr(configuration, 'TIME_ZONE', 'UTC')
@@ -127,6 +133,8 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
+    'django_extensions',
+    'django.contrib.sites',
     'corsheaders',
     'debug_toolbar',
     'django_filters',
@@ -203,7 +211,8 @@ STATICFILES_DIRS = (
 # Media
 MEDIA_URL = '/{}media/'.format(BASE_PATH)
 
-# Disable default limit of 1000 fields per request. Needed for bulk deletion of objects. (Added in Django 1.10.)
+# Disable default limit of 1000 fields per request. Needed for bulk
+# deletion of objects. (Added in Django 1.10.)
 DATA_UPLOAD_MAX_NUMBER_FIELDS = None
 
 # Messages
@@ -268,15 +277,7 @@ SWAGGER_SETTINGS = {
         'utilities.custom_inspectors.NullablePaginatorInspector',
         'drf_yasg.inspectors.DjangoRestResponsePagination',
         'drf_yasg.inspectors.CoreAPICompatInspector',
-    ],
-    'SECURITY_DEFINITIONS': {
-        'Bearer': {
-            'type': 'apiKey',
-            'name': 'Authorization',
-            'in': 'header',
-        }
-    },
-    'VALIDATOR_URL': None,
+    ]
 }
 
 
@@ -289,5 +290,18 @@ INTERNAL_IPS = (
 
 try:
     HOSTNAME = socket.gethostname()
-except Exception:
+except:
     HOSTNAME = 'localhost'
+
+GRAPH_MODELS = {
+    'all_applications': False,
+    'group_models': True
+}
+
+# Celery redis
+# CELERY SETTINGS
+BROKER_URL = 'redis://localhost:6379/0'
+# BROKER_URL = 'amqp://guest:guest@localhost:5672//'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'

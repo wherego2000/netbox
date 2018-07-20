@@ -17,13 +17,18 @@ class Command(BaseCommand):
     password = settings.NAPALM_PASSWORD
 
     def add_arguments(self, parser):
-        parser.add_argument('-u', '--username', dest='username', help="Specify the username to use")
-        parser.add_argument('-p', '--password', action='store_true', default=False, help="Prompt for password to use")
+        parser.add_argument('-u', '--username', dest='username',
+                            help="Specify the username to use")
+        parser.add_argument('-p', '--password', action='store_true',
+                            default=False, help="Prompt for password to use")
         parser.add_argument('-s', '--site', dest='site', action='append',
                             help="Filter devices by site (include argument once per site)")
-        parser.add_argument('-n', '--name', dest='name', help="Filter devices by name (regular expression)")
-        parser.add_argument('--full', action='store_true', default=False, help="For inventory update for all devices")
-        parser.add_argument('--fake', action='store_true', default=False, help="Do not actually update database")
+        parser.add_argument('-n', '--name', dest='name',
+                            help="Filter devices by name (regular expression)")
+        parser.add_argument('--full', action='store_true', default=False,
+                            help="For inventory update for all devices")
+        parser.add_argument('--fake', action='store_true',
+                            default=False, help="Do not actually update database")
 
     def handle(self, *args, **options):
 
@@ -48,9 +53,11 @@ class Command(BaseCommand):
             sites = Site.objects.filter(slug__in=options['site'])
             if sites:
                 site_names = [s.name for s in sites]
-                self.stdout.write("Running inventory for these sites: {}".format(', '.join(site_names)))
+                self.stdout.write(
+                    "Running inventory for these sites: {}".format(', '.join(site_names)))
             else:
-                raise CommandError("One or more sites specified but none found.")
+                raise CommandError(
+                    "One or more sites specified but none found.")
             device_list = device_list.filter(site__in=sites)
 
         # --name: Filter devices by name matching a regex
@@ -59,18 +66,21 @@ class Command(BaseCommand):
 
         # --full: Gather inventory data for *all* devices
         if options['full']:
-            self.stdout.write("WARNING: Running inventory for all devices! Prior data will be overwritten. (--full)")
+            self.stdout.write(
+                "WARNING: Running inventory for all devices! Prior data will be overwritten. (--full)")
 
         # --fake: Gathering data but not updating the database
         if options['fake']:
-            self.stdout.write("WARNING: Inventory data will not be saved! (--fake)")
+            self.stdout.write(
+                "WARNING: Inventory data will not be saved! (--fake)")
 
         device_count = device_list.count()
         self.stdout.write("** Found {} devices...".format(device_count))
 
         for i, device in enumerate(device_list, start=1):
 
-            self.stdout.write("[{}/{}] {}: ".format(i, device_count, device.name), ending='')
+            self.stdout.write(
+                "[{}/{}] {}: ".format(i, device_count, device.name), ending='')
 
             # Skip inactive devices
             if not device.status:
@@ -89,7 +99,8 @@ class Command(BaseCommand):
 
             RPC = device.get_rpc_client()
             if not RPC:
-                self.stdout.write("Skipped (no RPC client available for platform {})".format(device.platform))
+                self.stdout.write(
+                    "Skipped (no RPC client available for platform {})".format(device.platform))
                 continue
 
             # Connect to device and retrieve inventory info
@@ -107,13 +118,16 @@ class Command(BaseCommand):
 
             if options['verbosity'] > 1:
                 self.stdout.write("")
-                self.stdout.write("\tSerial: {}".format(inventory['chassis']['serial']))
-                self.stdout.write("\tDescription: {}".format(inventory['chassis']['description']))
+                self.stdout.write("\tSerial: {}".format(
+                    inventory['chassis']['serial']))
+                self.stdout.write("\tDescription: {}".format(
+                    inventory['chassis']['description']))
                 for item in inventory['items']:
                     self.stdout.write("\tItem: {} / {} ({})".format(item['name'], item['part_id'],
                                                                     item['serial']))
             else:
-                self.stdout.write("{} ({})".format(inventory['chassis']['description'], inventory['chassis']['serial']))
+                self.stdout.write("{} ({})".format(
+                    inventory['chassis']['description'], inventory['chassis']['serial']))
 
             if not options['fake']:
                 with transaction.atomic():
@@ -121,7 +135,8 @@ class Command(BaseCommand):
                     if device.serial != inventory['chassis']['serial']:
                         device.serial = inventory['chassis']['serial']
                         device.save()
-                    InventoryItem.objects.filter(device=device, discovered=True).delete()
+                    InventoryItem.objects.filter(
+                        device=device, discovered=True).delete()
                     create_inventory_items(inventory.get('items', []))
 
         self.stdout.write("Finished!")

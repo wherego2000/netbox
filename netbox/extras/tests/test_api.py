@@ -143,7 +143,8 @@ class ExportTemplateTest(HttpStatusMixin, APITestCase):
 
     def test_get_exporttemplate(self):
 
-        url = reverse('extras-api:exporttemplate-detail', kwargs={'pk': self.exporttemplate1.pk})
+        url = reverse('extras-api:exporttemplate-detail',
+                      kwargs={'pk': self.exporttemplate1.pk})
         response = self.client.get(url, **self.header)
 
         self.assertEqual(response.data['name'], self.exporttemplate1.name)
@@ -210,7 +211,8 @@ class ExportTemplateTest(HttpStatusMixin, APITestCase):
             'template_code': '{% for obj in queryset %}{{ obj.name }}\n{% endfor %}',
         }
 
-        url = reverse('extras-api:exporttemplate-detail', kwargs={'pk': self.exporttemplate1.pk})
+        url = reverse('extras-api:exporttemplate-detail',
+                      kwargs={'pk': self.exporttemplate1.pk})
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
@@ -221,7 +223,8 @@ class ExportTemplateTest(HttpStatusMixin, APITestCase):
 
     def test_delete_exporttemplate(self):
 
-        url = reverse('extras-api:exporttemplate-detail', kwargs={'pk': self.exporttemplate1.pk})
+        url = reverse('extras-api:exporttemplate-detail',
+                      kwargs={'pk': self.exporttemplate1.pk})
         response = self.client.delete(url, **self.header)
 
         self.assertHttpStatus(response, status.HTTP_204_NO_CONTENT)

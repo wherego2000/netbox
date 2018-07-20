@@ -20,6 +20,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='interface',
             name='mtu',
-            field=models.PositiveSmallIntegerField(blank=True, null=True, verbose_name='MTU'),
+            field=models.PositiveSmallIntegerField(
+                blank=True, null=True, verbose_name='MTU'),
         ),
     ]

@@ -20,10 +20,12 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Aggregate',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.AutoField(auto_created=True,
+                                        primary_key=True, serialize=False, verbose_name='ID')),
                 ('created', models.DateField(auto_now_add=True)),
                 ('last_updated', models.DateTimeField(auto_now=True)),
-                ('family', models.PositiveSmallIntegerField(choices=[(4, b'IPv4'), (6, b'IPv6')])),
+                ('family', models.PositiveSmallIntegerField(
+                    choices=[(4, b'IPv4'), (6, b'IPv6')])),
                 ('prefix', ipam.fields.IPNetworkField()),
                 ('date_added', models.DateField(blank=True, null=True)),
                 ('description', models.CharField(blank=True, max_length=100)),
@@ -35,14 +37,18 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='IPAddress',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.AutoField(auto_created=True,
+                                        primary_key=True, serialize=False, verbose_name='ID')),
                 ('created', models.DateField(auto_now_add=True)),
                 ('last_updated', models.DateTimeField(auto_now=True)),
-                ('family', models.PositiveSmallIntegerField(choices=[(4, b'IPv4'), (6, b'IPv6')], editable=False)),
+                ('family', models.PositiveSmallIntegerField(
+                    choices=[(4, b'IPv4'), (6, b'IPv6')], editable=False)),
                 ('address', ipam.fields.IPAddressField()),
                 ('description', models.CharField(blank=True, max_length=100)),
-                ('interface', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='ip_addresses', to='dcim.Interface')),
-                ('nat_inside', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='nat_outside', to='ipam.IPAddress', verbose_name=b'NAT IP (inside)')),
+                ('interface', models.ForeignKey(blank=True, null=True,
+                                                on_delete=django.db.models.deletion.CASCADE, related_name='ip_addresses', to='dcim.Interface')),
+                ('nat_inside', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                                    related_name='nat_outside', to='ipam.IPAddress', verbose_name=b'NAT IP (inside)')),
             ],
             options={
                 'ordering': ['family', 'address'],
@@ -53,12 +59,15 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Prefix',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.AutoField(auto_created=True,
+                                        primary_key=True, serialize=False, verbose_name='ID')),
                 ('created', models.DateField(auto_now_add=True)),
                 ('last_updated', models.DateTimeField(auto_now=True)),
-                ('family', models.PositiveSmallIntegerField(choices=[(4, b'IPv4'), (6, b'IPv6')], editable=False)),
+                ('family', models.PositiveSmallIntegerField(
+                    choices=[(4, b'IPv4'), (6, b'IPv6')], editable=False)),
                 ('prefix', ipam.fields.IPNetworkField()),
-                ('status', models.PositiveSmallIntegerField(choices=[(0, b'Container'), (1, b'Active'), (2, b'Reserved'), (3, b'Deprecated')], default=1, verbose_name=b'Status')),
+                ('status', models.PositiveSmallIntegerField(choices=[(0, b'Container'), (1, b'Active'), (
+                    2, b'Reserved'), (3, b'Deprecated')], default=1, verbose_name=b'Status')),
                 ('description', models.CharField(blank=True, max_length=100)),
             ],
             options={
@@ -69,7 +78,8 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='RIR',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.AutoField(auto_created=True,
+                                        primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=50, unique=True)),
                 ('slug', models.SlugField(unique=True)),
             ],
@@ -82,7 +92,8 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Role',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.AutoField(auto_created=True,
+                                        primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=50, unique=True)),
                 ('slug', models.SlugField(unique=True)),
                 ('weight', models.PositiveSmallIntegerField(default=1000)),
@@ -94,14 +105,19 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='VLAN',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.AutoField(auto_created=True,
+                                        primary_key=True, serialize=False, verbose_name='ID')),
                 ('created', models.DateField(auto_now_add=True)),
                 ('last_updated', models.DateTimeField(auto_now=True)),
-                ('vid', models.PositiveSmallIntegerField(validators=[django.core.validators.MinValueValidator(1), django.core.validators.MaxValueValidator(4094)], verbose_name=b'ID')),
+                ('vid', models.PositiveSmallIntegerField(validators=[django.core.validators.MinValueValidator(
+                    1), django.core.validators.MaxValueValidator(4094)], verbose_name=b'ID')),
                 ('name', models.CharField(max_length=30)),
-                ('status', models.PositiveSmallIntegerField(choices=[(1, b'Active'), (2, b'Reserved'), (3, b'Deprecated')], default=1, verbose_name=b'Status')),
-                ('role', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='vlans', to='ipam.Role')),
-                ('site', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='vlans', to='dcim.Site')),
+                ('status', models.PositiveSmallIntegerField(choices=[
+                 (1, b'Active'), (2, b'Reserved'), (3, b'Deprecated')], default=1, verbose_name=b'Status')),
+                ('role', models.ForeignKey(blank=True, null=True,
+                                           on_delete=django.db.models.deletion.SET_NULL, related_name='vlans', to='ipam.Role')),
+                ('site', models.ForeignKey(
+                    on_delete=django.db.models.deletion.PROTECT, related_name='vlans', to='dcim.Site')),
             ],
             options={
                 'ordering': ['site', 'vid'],
@@ -112,11 +128,13 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='VRF',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.AutoField(auto_created=True,
+                                        primary_key=True, serialize=False, verbose_name='ID')),
                 ('created', models.DateField(auto_now_add=True)),
                 ('last_updated', models.DateTimeField(auto_now=True)),
                 ('name', models.CharField(max_length=50)),
-                ('rd', models.CharField(max_length=21, unique=True, verbose_name=b'Route distinguisher')),
+                ('rd', models.CharField(max_length=21, unique=True,
+                                        verbose_name=b'Route distinguisher')),
                 ('description', models.CharField(blank=True, max_length=100)),
             ],
             options={
@@ -128,31 +146,37 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='prefix',
             name='role',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='prefixes', to='ipam.Role'),
+            field=models.ForeignKey(
+                blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='prefixes', to='ipam.Role'),
         ),
         migrations.AddField(
             model_name='prefix',
             name='site',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='prefixes', to='dcim.Site'),
+            field=models.ForeignKey(
+                blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='prefixes', to='dcim.Site'),
         ),
         migrations.AddField(
             model_name='prefix',
             name='vlan',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='prefixes', to='ipam.VLAN', verbose_name=b'VLAN'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT,
+                                    related_name='prefixes', to='ipam.VLAN', verbose_name=b'VLAN'),
         ),
         migrations.AddField(
             model_name='prefix',
             name='vrf',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='prefixes', to='ipam.VRF', verbose_name=b'VRF'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT,
+                                    related_name='prefixes', to='ipam.VRF', verbose_name=b'VRF'),
         ),
         migrations.AddField(
             model_name='ipaddress',
             name='vrf',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='ip_addresses', to='ipam.VRF', verbose_name=b'VRF'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT,
+                                    related_name='ip_addresses', to='ipam.VRF', verbose_name=b'VRF'),
         ),
         migrations.AddField(
             model_name='aggregate',
             name='rir',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='aggregates', to='ipam.RIR', verbose_name=b'RIR'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT,
+                                    related_name='aggregates', to='ipam.RIR', verbose_name=b'RIR'),
         ),
     ]

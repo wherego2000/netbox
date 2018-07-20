@@ -29,7 +29,8 @@ from virtualization.models import Cluster
 #
 
 class NestedRegionSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='dcim-api:region-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='dcim-api:region-detail')
 
     class Meta:
         model = Region
@@ -72,7 +73,8 @@ class SiteSerializer(CustomFieldModelSerializer):
 
 
 class NestedSiteSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='dcim-api:site-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='dcim-api:site-detail')
 
     class Meta:
         model = Site
@@ -80,7 +82,7 @@ class NestedSiteSerializer(serializers.ModelSerializer):
 
 
 class WritableSiteSerializer(CustomFieldModelSerializer):
-    time_zone = TimeZoneField(required=False, allow_null=True)
+    time_zone = TimeZoneField(required=False)
 
     class Meta:
         model = Site
@@ -104,7 +106,8 @@ class RackGroupSerializer(serializers.ModelSerializer):
 
 
 class NestedRackGroupSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='dcim-api:rackgroup-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='dcim-api:rackgroup-detail')
 
     class Meta:
         model = RackGroup
@@ -130,7 +133,8 @@ class RackRoleSerializer(ValidatedModelSerializer):
 
 
 class NestedRackRoleSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='dcim-api:rackrole-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='dcim-api:rackrole-detail')
 
     class Meta:
         model = RackRole
@@ -158,7 +162,8 @@ class RackSerializer(CustomFieldModelSerializer):
 
 
 class NestedRackSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='dcim-api:rack-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='dcim-api:rack-detail')
 
     class Meta:
         model = Rack
@@ -176,14 +181,16 @@ class WritableRackSerializer(CustomFieldModelSerializer):
         # Omit the UniqueTogetherValidator that would be automatically added to validate (site, facility_id). This
         # prevents facility_id from being interpreted as a required field.
         validators = [
-            UniqueTogetherValidator(queryset=Rack.objects.all(), fields=('site', 'name'))
+            UniqueTogetherValidator(
+                queryset=Rack.objects.all(), fields=('site', 'name'))
         ]
 
     def validate(self, data):
 
         # Validate uniqueness of (site, facility_id) since we omitted the automatically-created validator from Meta.
         if data.get('facility_id', None):
-            validator = UniqueTogetherValidator(queryset=Rack.objects.all(), fields=('site', 'facility_id'))
+            validator = UniqueTogetherValidator(
+                queryset=Rack.objects.all(), fields=('site', 'facility_id'))
             validator.set_context(self)
             validator(data)
 
@@ -198,7 +205,8 @@ class WritableRackSerializer(CustomFieldModelSerializer):
 #
 
 class NestedDeviceSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='dcim-api:device-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='dcim-api:device-detail')
 
     class Meta:
         model = Device
@@ -226,14 +234,15 @@ class RackReservationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RackReservation
-        fields = ['id', 'rack', 'units', 'created', 'user', 'tenant', 'description']
+        fields = ['id', 'rack', 'units', 'created',
+                  'user', 'tenant', 'description']
 
 
 class WritableRackReservationSerializer(ValidatedModelSerializer):
 
     class Meta:
         model = RackReservation
-        fields = ['id', 'rack', 'units', 'user', 'tenant', 'description']
+        fields = ['id', 'rack', 'units', 'user', 'description']
 
 
 #
@@ -248,7 +257,8 @@ class ManufacturerSerializer(ValidatedModelSerializer):
 
 
 class NestedManufacturerSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='dcim-api:manufacturer-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='dcim-api:manufacturer-detail')
 
     class Meta:
         model = Manufacturer
@@ -263,7 +273,8 @@ class DeviceTypeSerializer(CustomFieldModelSerializer):
     manufacturer = NestedManufacturerSerializer()
     interface_ordering = ChoiceFieldSerializer(choices=IFACE_ORDERING_CHOICES)
     subdevice_role = ChoiceFieldSerializer(choices=SUBDEVICE_ROLE_CHOICES)
-    instance_count = serializers.IntegerField(source='instances.count', read_only=True)
+    instance_count = serializers.IntegerField(
+        source='instances.count', read_only=True)
 
     class Meta:
         model = DeviceType
@@ -275,7 +286,8 @@ class DeviceTypeSerializer(CustomFieldModelSerializer):
 
 
 class NestedDeviceTypeSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='dcim-api:devicetype-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='dcim-api:devicetype-detail')
     manufacturer = NestedManufacturerSerializer()
 
     class Meta:
@@ -420,7 +432,8 @@ class DeviceRoleSerializer(ValidatedModelSerializer):
 
 
 class NestedDeviceRoleSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='dcim-api:devicerole-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='dcim-api:devicerole-detail')
 
     class Meta:
         model = DeviceRole
@@ -436,11 +449,13 @@ class PlatformSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Platform
-        fields = ['id', 'name', 'slug', 'manufacturer', 'napalm_driver', 'rpc_client']
+        fields = ['id', 'name', 'slug', 'manufacturer',
+                  'napalm_driver', 'rpc_client']
 
 
 class NestedPlatformSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='dcim-api:platform-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='dcim-api:platform-detail')
 
     class Meta:
         model = Platform
@@ -451,7 +466,8 @@ class WritablePlatformSerializer(ValidatedModelSerializer):
 
     class Meta:
         model = Platform
-        fields = ['id', 'name', 'slug', 'manufacturer', 'napalm_driver', 'rpc_client']
+        fields = ['id', 'name', 'slug', 'manufacturer',
+                  'napalm_driver', 'rpc_client']
 
 
 #
@@ -460,7 +476,8 @@ class WritablePlatformSerializer(ValidatedModelSerializer):
 
 # Cannot import ipam.api.NestedIPAddressSerializer due to circular dependency
 class DeviceIPAddressSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='ipam-api:ipaddress-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='ipam-api:ipaddress-detail')
 
     class Meta:
         model = IPAddress
@@ -469,7 +486,8 @@ class DeviceIPAddressSerializer(serializers.ModelSerializer):
 
 # Cannot import virtualization.api.NestedClusterSerializer due to circular dependency
 class NestedClusterSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='virtualization-api:cluster-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='virtualization-api:cluster-detail')
 
     class Meta:
         model = Cluster
@@ -478,7 +496,8 @@ class NestedClusterSerializer(serializers.ModelSerializer):
 
 # Cannot import NestedVirtualChassisSerializer due to circular dependency
 class DeviceVirtualChassisSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='dcim-api:virtualchassis-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='dcim-api:virtualchassis-detail')
     master = NestedDeviceSerializer()
 
     class Meta:
@@ -517,8 +536,10 @@ class DeviceSerializer(CustomFieldModelSerializer):
         except DeviceBay.DoesNotExist:
             return None
         context = {'request': self.context['request']}
-        data = NestedDeviceSerializer(instance=device_bay.device, context=context).data
-        data['device_bay'] = NestedDeviceBaySerializer(instance=device_bay, context=context).data
+        data = NestedDeviceSerializer(
+            instance=device_bay.device, context=context).data
+        data['device_bay'] = NestedDeviceBaySerializer(
+            instance=device_bay, context=context).data
         return data
 
 
@@ -537,7 +558,8 @@ class WritableDeviceSerializer(CustomFieldModelSerializer):
 
         # Validate uniqueness of (rack, position, face) since we omitted the automatically-created validator from Meta.
         if data.get('rack') and data.get('position') and data.get('face'):
-            validator = UniqueTogetherValidator(queryset=Device.objects.all(), fields=('rack', 'position', 'face'))
+            validator = UniqueTogetherValidator(
+                queryset=Device.objects.all(), fields=('rack', 'position', 'face'))
             validator.set_context(self)
             validator(data)
 
@@ -632,7 +654,8 @@ class WritablePowerPortSerializer(ValidatedModelSerializer):
 #
 
 class NestedInterfaceSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='dcim-api:interface-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='dcim-api:interface-detail')
 
     class Meta:
         model = Interface
@@ -640,7 +663,8 @@ class NestedInterfaceSerializer(serializers.ModelSerializer):
 
 
 class InterfaceNestedCircuitSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='circuits-api:circuit-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='circuits-api:circuit-detail')
 
     class Meta:
         model = Circuit
@@ -659,7 +683,8 @@ class InterfaceCircuitTerminationSerializer(serializers.ModelSerializer):
 
 # Cannot import ipam.api.NestedVLANSerializer due to circular dependency
 class InterfaceVLANSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='ipam-api:vlan-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='ipam-api:vlan-detail')
 
     class Meta:
         model = VLAN
@@ -700,14 +725,16 @@ class InterfaceSerializer(serializers.ModelSerializer):
     def get_interface_connection(self, obj):
         if obj.connection:
             return OrderedDict((
-                ('interface', PeerInterfaceSerializer(obj.connected_interface, context=self.context).data),
+                ('interface', PeerInterfaceSerializer(
+                    obj.connected_interface, context=self.context).data),
                 ('status', obj.connection.connection_status),
             ))
         return None
 
 
 class PeerInterfaceSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='dcim-api:interface-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='dcim-api:interface-detail')
     device = NestedDeviceSerializer()
     form_factor = ChoiceFieldSerializer(choices=IFACE_FF_CHOICES)
     lag = NestedInterfaceSerializer()
@@ -763,7 +790,8 @@ class DeviceBaySerializer(serializers.ModelSerializer):
 
 
 class NestedDeviceBaySerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='dcim-api:devicebay-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='dcim-api:devicebay-detail')
 
     class Meta:
         model = DeviceBay
@@ -795,7 +823,8 @@ class InventoryItemSerializer(serializers.ModelSerializer):
 
 class WritableInventoryItemSerializer(ValidatedModelSerializer):
     # Provide a default value to satisfy UniqueTogetherValidator
-    parent = serializers.PrimaryKeyRelatedField(queryset=InventoryItem.objects.all(), allow_null=True, default=None)
+    parent = serializers.PrimaryKeyRelatedField(
+        queryset=InventoryItem.objects.all(), allow_null=True, default=None)
 
     class Meta:
         model = InventoryItem
@@ -812,7 +841,8 @@ class WritableInventoryItemSerializer(ValidatedModelSerializer):
 class InterfaceConnectionSerializer(serializers.ModelSerializer):
     interface_a = PeerInterfaceSerializer()
     interface_b = PeerInterfaceSerializer()
-    connection_status = ChoiceFieldSerializer(choices=CONNECTION_STATUS_CHOICES)
+    connection_status = ChoiceFieldSerializer(
+        choices=CONNECTION_STATUS_CHOICES)
 
     class Meta:
         model = InterfaceConnection
@@ -820,7 +850,8 @@ class InterfaceConnectionSerializer(serializers.ModelSerializer):
 
 
 class NestedInterfaceConnectionSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='dcim-api:interfaceconnection-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='dcim-api:interfaceconnection-detail')
 
     class Meta:
         model = InterfaceConnection
@@ -847,7 +878,8 @@ class VirtualChassisSerializer(serializers.ModelSerializer):
 
 
 class NestedVirtualChassisSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='dcim-api:virtualchassis-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='dcim-api:virtualchassis-detail')
 
     class Meta:
         model = VirtualChassis

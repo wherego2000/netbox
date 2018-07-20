@@ -68,8 +68,10 @@ class TenantCSVForm(forms.ModelForm):
 
 
 class TenantBulkEditForm(BootstrapMixin, CustomFieldBulkEditForm):
-    pk = forms.ModelMultipleChoiceField(queryset=Tenant.objects.all(), widget=forms.MultipleHiddenInput)
-    group = forms.ModelChoiceField(queryset=TenantGroup.objects.all(), required=False)
+    pk = forms.ModelMultipleChoiceField(
+        queryset=Tenant.objects.all(), widget=forms.MultipleHiddenInput)
+    group = forms.ModelChoiceField(
+        queryset=TenantGroup.objects.all(), required=False)
 
     class Meta:
         nullable_fields = ['group']

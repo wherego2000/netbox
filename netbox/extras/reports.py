@@ -48,7 +48,8 @@ def get_reports():
     # defined.
     for importer, module_name, is_pkg in pkgutil.walk_packages([settings.REPORTS_ROOT]):
         module = importlib.import_module('reports.{}'.format(module_name))
-        report_list = [cls() for _, cls in inspect.getmembers(module, is_report)]
+        report_list = [cls()
+                       for _, cls in inspect.getmembers(module, is_report)]
         module_list.append((module_name, report_list))
 
     return module_list
@@ -175,7 +176,8 @@ class Report(object):
 
         # Delete any previous ReportResult and create a new one to record the result.
         ReportResult.objects.filter(report=self.full_name).delete()
-        result = ReportResult(report=self.full_name, failed=self.failed, data=self._results)
+        result = ReportResult(report=self.full_name,
+                              failed=self.failed, data=self._results)
         result.save()
         self.result = result
 

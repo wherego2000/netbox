@@ -16,11 +16,13 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='device',
             name='rack',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='devices', to='dcim.Rack'),
+            field=models.ForeignKey(
+                blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='devices', to='dcim.Rack'),
         ),
         migrations.AlterField(
             model_name='device',
             name='site',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='devices', to='dcim.Site'),
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT, related_name='devices', to='dcim.Site'),
         ),
     ]

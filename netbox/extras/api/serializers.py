@@ -54,7 +54,8 @@ class ExportTemplateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ExportTemplate
-        fields = ['id', 'content_type', 'name', 'description', 'template_code', 'mime_type', 'file_extension']
+        fields = ['id', 'content_type', 'name', 'description',
+                  'template_code', 'mime_type', 'file_extension']
 
 
 #
@@ -66,14 +67,16 @@ class TopologyMapSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TopologyMap
-        fields = ['id', 'name', 'slug', 'site', 'device_patterns', 'description']
+        fields = ['id', 'name', 'slug', 'site',
+                  'device_patterns', 'description']
 
 
 class WritableTopologyMapSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TopologyMap
-        fields = ['id', 'name', 'slug', 'site', 'device_patterns', 'description']
+        fields = ['id', 'name', 'slug', 'site',
+                  'device_patterns', 'description']
 
 
 #
@@ -85,7 +88,8 @@ class ImageAttachmentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ImageAttachment
-        fields = ['id', 'parent', 'name', 'image', 'image_height', 'image_width', 'created']
+        fields = ['id', 'parent', 'name', 'image',
+                  'image_height', 'image_width', 'created']
 
     def get_parent(self, obj):
 
@@ -97,7 +101,8 @@ class ImageAttachmentSerializer(serializers.ModelSerializer):
         elif isinstance(obj.parent, Site):
             serializer = NestedSiteSerializer
         else:
-            raise Exception("Unexpected type of parent object for ImageAttachment")
+            raise Exception(
+                "Unexpected type of parent object for ImageAttachment")
 
         return serializer(obj.parent, context={'request': self.context['request']}).data
 
@@ -116,7 +121,8 @@ class WritableImageAttachmentSerializer(ValidatedModelSerializer):
             data['content_type'].get_object_for_this_type(id=data['object_id'])
         except ObjectDoesNotExist:
             raise serializers.ValidationError(
-                "Invalid parent object: {} ID {}".format(data['content_type'], data['object_id'])
+                "Invalid parent object: {} ID {}".format(
+                    data['content_type'], data['object_id'])
             )
 
         # Enforce model validation
@@ -152,7 +158,8 @@ class ReportSerializer(serializers.Serializer):
     module = serializers.CharField(max_length=255)
     name = serializers.CharField(max_length=255)
     description = serializers.CharField(max_length=255, required=False)
-    test_methods = serializers.ListField(child=serializers.CharField(max_length=255))
+    test_methods = serializers.ListField(
+        child=serializers.CharField(max_length=255))
     result = NestedReportResultSerializer()
 
 

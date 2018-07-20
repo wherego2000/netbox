@@ -15,6 +15,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='rir',
             name='is_private',
-            field=models.BooleanField(default=False, help_text=b'IP space managed by this RIR is considered private', verbose_name=b'Private'),
+            field=models.BooleanField(
+                default=False, help_text=b'IP space managed by this RIR is considered private', verbose_name=b'Private'),
         ),
     ]

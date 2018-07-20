@@ -24,12 +24,14 @@ class Command(BaseCommand):
 
                     # Run the report and create a new ReportResult
                     self.stdout.write(
-                        "[{:%H:%M:%S}] Running {}...".format(timezone.now(), report.full_name)
+                        "[{:%H:%M:%S}] Running {}...".format(
+                            timezone.now(), report.full_name)
                     )
                     report.run()
 
                     # Report on success/failure
-                    status = self.style.ERROR('FAILED') if report.failed else self.style.SUCCESS('SUCCESS')
+                    status = self.style.ERROR(
+                        'FAILED') if report.failed else self.style.SUCCESS('SUCCESS')
                     for test_name, attrs in report.result.data.items():
                         self.stdout.write(
                             "\t{}: {} success, {} info, {} warning, {} failure".format(
@@ -37,7 +39,8 @@ class Command(BaseCommand):
                             )
                         )
                     self.stdout.write(
-                        "[{:%H:%M:%S}] {}: {}".format(timezone.now(), report.full_name, status)
+                        "[{:%H:%M:%S}] {}: {}".format(
+                            timezone.now(), report.full_name, status)
                     )
 
         # Wrap things up

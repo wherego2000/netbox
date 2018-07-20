@@ -27,7 +27,8 @@ class ImageAttachmentEditView(PermissionRequiredMixin, ObjectEditView):
         if not imageattachment.pk:
             # Assign the parent object based on URL kwargs
             model = kwargs.get('model')
-            imageattachment.parent = get_object_or_404(model, pk=kwargs['object_id'])
+            imageattachment.parent = get_object_or_404(
+                model, pk=kwargs['object_id'])
         return imageattachment
 
     def get_return_url(self, request, imageattachment):
@@ -83,7 +84,8 @@ class ReportView(View):
             raise Http404
 
         # Attach the ReportResult (if any)
-        report.result = ReportResult.objects.filter(report=report.full_name).first()
+        report.result = ReportResult.objects.filter(
+            report=report.full_name).first()
 
         return render(request, 'extras/report.html', {
             'report': report,

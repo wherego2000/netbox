@@ -28,9 +28,12 @@ class RegionTest(HttpStatusMixin, APITestCase):
         token = Token.objects.create(user=user)
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
-        self.region1 = Region.objects.create(name='Test Region 1', slug='test-region-1')
-        self.region2 = Region.objects.create(name='Test Region 2', slug='test-region-2')
-        self.region3 = Region.objects.create(name='Test Region 3', slug='test-region-3')
+        self.region1 = Region.objects.create(
+            name='Test Region 1', slug='test-region-1')
+        self.region2 = Region.objects.create(
+            name='Test Region 2', slug='test-region-2')
+        self.region3 = Region.objects.create(
+            name='Test Region 3', slug='test-region-3')
 
     def test_get_region(self):
 
@@ -121,11 +124,16 @@ class SiteTest(HttpStatusMixin, APITestCase):
         token = Token.objects.create(user=user)
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
-        self.region1 = Region.objects.create(name='Test Region 1', slug='test-region-1')
-        self.region2 = Region.objects.create(name='Test Region 2', slug='test-region-2')
-        self.site1 = Site.objects.create(region=self.region1, name='Test Site 1', slug='test-site-1')
-        self.site2 = Site.objects.create(region=self.region1, name='Test Site 2', slug='test-site-2')
-        self.site3 = Site.objects.create(region=self.region1, name='Test Site 3', slug='test-site-3')
+        self.region1 = Region.objects.create(
+            name='Test Region 1', slug='test-region-1')
+        self.region2 = Region.objects.create(
+            name='Test Region 2', slug='test-region-2')
+        self.site1 = Site.objects.create(
+            region=self.region1, name='Test Site 1', slug='test-site-1')
+        self.site2 = Site.objects.create(
+            region=self.region1, name='Test Site 2', slug='test-site-2')
+        self.site3 = Site.objects.create(
+            region=self.region1, name='Test Site 3', slug='test-site-3')
 
     def test_get_site(self):
 
@@ -153,7 +161,8 @@ class SiteTest(HttpStatusMixin, APITestCase):
         response = self.client.get(url, **self.header)
 
         self.assertEqual(len(response.data), 3)
-        self.assertEqual(response.data[0]['embed_url'], 'http://example.com/graphs.py?site=test-site-1&foo=1')
+        self.assertEqual(
+            response.data[0]['embed_url'], 'http://example.com/graphs.py?site=test-site-1&foo=1')
 
     def test_list_sites(self):
 
@@ -244,15 +253,21 @@ class RackGroupTest(HttpStatusMixin, APITestCase):
         token = Token.objects.create(user=user)
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
-        self.site1 = Site.objects.create(name='Test Site 1', slug='test-site-1')
-        self.site2 = Site.objects.create(name='Test Site 2', slug='test-site-2')
-        self.rackgroup1 = RackGroup.objects.create(site=self.site1, name='Test Rack Group 1', slug='test-rack-group-1')
-        self.rackgroup2 = RackGroup.objects.create(site=self.site1, name='Test Rack Group 2', slug='test-rack-group-2')
-        self.rackgroup3 = RackGroup.objects.create(site=self.site1, name='Test Rack Group 3', slug='test-rack-group-3')
+        self.site1 = Site.objects.create(
+            name='Test Site 1', slug='test-site-1')
+        self.site2 = Site.objects.create(
+            name='Test Site 2', slug='test-site-2')
+        self.rackgroup1 = RackGroup.objects.create(
+            site=self.site1, name='Test Rack Group 1', slug='test-rack-group-1')
+        self.rackgroup2 = RackGroup.objects.create(
+            site=self.site1, name='Test Rack Group 2', slug='test-rack-group-2')
+        self.rackgroup3 = RackGroup.objects.create(
+            site=self.site1, name='Test Rack Group 3', slug='test-rack-group-3')
 
     def test_get_rackgroup(self):
 
-        url = reverse('dcim-api:rackgroup-detail', kwargs={'pk': self.rackgroup1.pk})
+        url = reverse('dcim-api:rackgroup-detail',
+                      kwargs={'pk': self.rackgroup1.pk})
         response = self.client.get(url, **self.header)
 
         self.assertEqual(response.data['name'], self.rackgroup1.name)
@@ -319,7 +334,8 @@ class RackGroupTest(HttpStatusMixin, APITestCase):
             'site': self.site2.pk,
         }
 
-        url = reverse('dcim-api:rackgroup-detail', kwargs={'pk': self.rackgroup1.pk})
+        url = reverse('dcim-api:rackgroup-detail',
+                      kwargs={'pk': self.rackgroup1.pk})
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
@@ -331,7 +347,8 @@ class RackGroupTest(HttpStatusMixin, APITestCase):
 
     def test_delete_rackgroup(self):
 
-        url = reverse('dcim-api:rackgroup-detail', kwargs={'pk': self.rackgroup1.pk})
+        url = reverse('dcim-api:rackgroup-detail',
+                      kwargs={'pk': self.rackgroup1.pk})
         response = self.client.delete(url, **self.header)
 
         self.assertHttpStatus(response, status.HTTP_204_NO_CONTENT)
@@ -346,13 +363,17 @@ class RackRoleTest(HttpStatusMixin, APITestCase):
         token = Token.objects.create(user=user)
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
-        self.rackrole1 = RackRole.objects.create(name='Test Rack Role 1', slug='test-rack-role-1', color='ff0000')
-        self.rackrole2 = RackRole.objects.create(name='Test Rack Role 2', slug='test-rack-role-2', color='00ff00')
-        self.rackrole3 = RackRole.objects.create(name='Test Rack Role 3', slug='test-rack-role-3', color='0000ff')
+        self.rackrole1 = RackRole.objects.create(
+            name='Test Rack Role 1', slug='test-rack-role-1', color='ff0000')
+        self.rackrole2 = RackRole.objects.create(
+            name='Test Rack Role 2', slug='test-rack-role-2', color='00ff00')
+        self.rackrole3 = RackRole.objects.create(
+            name='Test Rack Role 3', slug='test-rack-role-3', color='0000ff')
 
     def test_get_rackrole(self):
 
-        url = reverse('dcim-api:rackrole-detail', kwargs={'pk': self.rackrole1.pk})
+        url = reverse('dcim-api:rackrole-detail',
+                      kwargs={'pk': self.rackrole1.pk})
         response = self.client.get(url, **self.header)
 
         self.assertEqual(response.data['name'], self.rackrole1.name)
@@ -419,7 +440,8 @@ class RackRoleTest(HttpStatusMixin, APITestCase):
             'color': 'ffff00',
         }
 
-        url = reverse('dcim-api:rackrole-detail', kwargs={'pk': self.rackrole1.pk})
+        url = reverse('dcim-api:rackrole-detail',
+                      kwargs={'pk': self.rackrole1.pk})
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
@@ -431,7 +453,8 @@ class RackRoleTest(HttpStatusMixin, APITestCase):
 
     def test_delete_rackrole(self):
 
-        url = reverse('dcim-api:rackrole-detail', kwargs={'pk': self.rackrole1.pk})
+        url = reverse('dcim-api:rackrole-detail',
+                      kwargs={'pk': self.rackrole1.pk})
         response = self.client.delete(url, **self.header)
 
         self.assertHttpStatus(response, status.HTTP_204_NO_CONTENT)
@@ -446,12 +469,18 @@ class RackTest(HttpStatusMixin, APITestCase):
         token = Token.objects.create(user=user)
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
-        self.site1 = Site.objects.create(name='Test Site 1', slug='test-site-1')
-        self.site2 = Site.objects.create(name='Test Site 2', slug='test-site-2')
-        self.rackgroup1 = RackGroup.objects.create(site=self.site1, name='Test Rack Group 1', slug='test-rack-group-1')
-        self.rackgroup2 = RackGroup.objects.create(site=self.site2, name='Test Rack Group 2', slug='test-rack-group-2')
-        self.rackrole1 = RackRole.objects.create(name='Test Rack Role 1', slug='test-rack-role-1', color='ff0000')
-        self.rackrole2 = RackRole.objects.create(name='Test Rack Role 2', slug='test-rack-role-2', color='00ff00')
+        self.site1 = Site.objects.create(
+            name='Test Site 1', slug='test-site-1')
+        self.site2 = Site.objects.create(
+            name='Test Site 2', slug='test-site-2')
+        self.rackgroup1 = RackGroup.objects.create(
+            site=self.site1, name='Test Rack Group 1', slug='test-rack-group-1')
+        self.rackgroup2 = RackGroup.objects.create(
+            site=self.site2, name='Test Rack Group 2', slug='test-rack-group-2')
+        self.rackrole1 = RackRole.objects.create(
+            name='Test Rack Role 1', slug='test-rack-role-1', color='ff0000')
+        self.rackrole2 = RackRole.objects.create(
+            name='Test Rack Role 2', slug='test-rack-role-2', color='00ff00')
         self.rack1 = Rack.objects.create(
             site=self.site1, group=self.rackgroup1, role=self.rackrole1, name='Test Rack 1', u_height=42,
         )
@@ -573,7 +602,8 @@ class RackReservationTest(HttpStatusMixin, APITestCase):
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
         self.user1 = user
-        self.site1 = Site.objects.create(name='Test Site 1', slug='test-site-1')
+        self.site1 = Site.objects.create(
+            name='Test Site 1', slug='test-site-1')
         self.rack1 = Rack.objects.create(site=self.site1, name='Test Rack 1')
         self.rackreservation1 = RackReservation.objects.create(
             rack=self.rack1, units=[1, 2, 3], user=user, description='Reservation #1',
@@ -587,7 +617,8 @@ class RackReservationTest(HttpStatusMixin, APITestCase):
 
     def test_get_rackreservation(self):
 
-        url = reverse('dcim-api:rackreservation-detail', kwargs={'pk': self.rackreservation1.pk})
+        url = reverse('dcim-api:rackreservation-detail',
+                      kwargs={'pk': self.rackreservation1.pk})
         response = self.client.get(url, **self.header)
 
         self.assertEqual(response.data['id'], self.rackreservation1.pk)
@@ -647,9 +678,12 @@ class RackReservationTest(HttpStatusMixin, APITestCase):
 
         self.assertHttpStatus(response, status.HTTP_201_CREATED)
         self.assertEqual(RackReservation.objects.count(), 6)
-        self.assertEqual(response.data[0]['description'], data[0]['description'])
-        self.assertEqual(response.data[1]['description'], data[1]['description'])
-        self.assertEqual(response.data[2]['description'], data[2]['description'])
+        self.assertEqual(
+            response.data[0]['description'], data[0]['description'])
+        self.assertEqual(
+            response.data[1]['description'], data[1]['description'])
+        self.assertEqual(
+            response.data[2]['description'], data[2]['description'])
 
     def test_update_rackreservation(self):
 
@@ -660,7 +694,8 @@ class RackReservationTest(HttpStatusMixin, APITestCase):
             'description': 'Modified reservation',
         }
 
-        url = reverse('dcim-api:rackreservation-detail', kwargs={'pk': self.rackreservation1.pk})
+        url = reverse('dcim-api:rackreservation-detail',
+                      kwargs={'pk': self.rackreservation1.pk})
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
@@ -671,7 +706,8 @@ class RackReservationTest(HttpStatusMixin, APITestCase):
 
     def test_delete_rackreservation(self):
 
-        url = reverse('dcim-api:rackreservation-detail', kwargs={'pk': self.rackreservation1.pk})
+        url = reverse('dcim-api:rackreservation-detail',
+                      kwargs={'pk': self.rackreservation1.pk})
         response = self.client.delete(url, **self.header)
 
         self.assertHttpStatus(response, status.HTTP_204_NO_CONTENT)
@@ -686,13 +722,17 @@ class ManufacturerTest(HttpStatusMixin, APITestCase):
         token = Token.objects.create(user=user)
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
-        self.manufacturer1 = Manufacturer.objects.create(name='Test Manufacturer 1', slug='test-manufacturer-1')
-        self.manufacturer2 = Manufacturer.objects.create(name='Test Manufacturer 2', slug='test-manufacturer-2')
-        self.manufacturer3 = Manufacturer.objects.create(name='Test Manufacturer 3', slug='test-manufacturer-3')
+        self.manufacturer1 = Manufacturer.objects.create(
+            name='Test Manufacturer 1', slug='test-manufacturer-1')
+        self.manufacturer2 = Manufacturer.objects.create(
+            name='Test Manufacturer 2', slug='test-manufacturer-2')
+        self.manufacturer3 = Manufacturer.objects.create(
+            name='Test Manufacturer 3', slug='test-manufacturer-3')
 
     def test_get_manufacturer(self):
 
-        url = reverse('dcim-api:manufacturer-detail', kwargs={'pk': self.manufacturer1.pk})
+        url = reverse('dcim-api:manufacturer-detail',
+                      kwargs={'pk': self.manufacturer1.pk})
         response = self.client.get(url, **self.header)
 
         self.assertEqual(response.data['name'], self.manufacturer1.name)
@@ -753,7 +793,8 @@ class ManufacturerTest(HttpStatusMixin, APITestCase):
             'slug': 'test-manufacturer-x',
         }
 
-        url = reverse('dcim-api:manufacturer-detail', kwargs={'pk': self.manufacturer1.pk})
+        url = reverse('dcim-api:manufacturer-detail',
+                      kwargs={'pk': self.manufacturer1.pk})
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
@@ -764,7 +805,8 @@ class ManufacturerTest(HttpStatusMixin, APITestCase):
 
     def test_delete_manufacturer(self):
 
-        url = reverse('dcim-api:manufacturer-detail', kwargs={'pk': self.manufacturer1.pk})
+        url = reverse('dcim-api:manufacturer-detail',
+                      kwargs={'pk': self.manufacturer1.pk})
         response = self.client.delete(url, **self.header)
 
         self.assertHttpStatus(response, status.HTTP_204_NO_CONTENT)
@@ -779,8 +821,10 @@ class DeviceTypeTest(HttpStatusMixin, APITestCase):
         token = Token.objects.create(user=user)
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
-        self.manufacturer1 = Manufacturer.objects.create(name='Test Manufacturer 1', slug='test-manufacturer-1')
-        self.manufacturer2 = Manufacturer.objects.create(name='Test Manufacturer 2', slug='test-manufacturer-2')
+        self.manufacturer1 = Manufacturer.objects.create(
+            name='Test Manufacturer 1', slug='test-manufacturer-1')
+        self.manufacturer2 = Manufacturer.objects.create(
+            name='Test Manufacturer 2', slug='test-manufacturer-2')
         self.devicetype1 = DeviceType.objects.create(
             manufacturer=self.manufacturer1, model='Test Device Type 1', slug='test-device-type-1'
         )
@@ -793,7 +837,8 @@ class DeviceTypeTest(HttpStatusMixin, APITestCase):
 
     def test_get_devicetype(self):
 
-        url = reverse('dcim-api:devicetype-detail', kwargs={'pk': self.devicetype1.pk})
+        url = reverse('dcim-api:devicetype-detail',
+                      kwargs={'pk': self.devicetype1.pk})
         response = self.client.get(url, **self.header)
 
         self.assertEqual(response.data['model'], self.devicetype1.model)
@@ -860,7 +905,8 @@ class DeviceTypeTest(HttpStatusMixin, APITestCase):
             'slug': 'test-device-type-x',
         }
 
-        url = reverse('dcim-api:devicetype-detail', kwargs={'pk': self.devicetype1.pk})
+        url = reverse('dcim-api:devicetype-detail',
+                      kwargs={'pk': self.devicetype1.pk})
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
@@ -872,7 +918,8 @@ class DeviceTypeTest(HttpStatusMixin, APITestCase):
 
     def test_delete_devicetype(self):
 
-        url = reverse('dcim-api:devicetype-detail', kwargs={'pk': self.devicetype1.pk})
+        url = reverse('dcim-api:devicetype-detail',
+                      kwargs={'pk': self.devicetype1.pk})
         response = self.client.delete(url, **self.header)
 
         self.assertHttpStatus(response, status.HTTP_204_NO_CONTENT)
@@ -887,7 +934,8 @@ class ConsolePortTemplateTest(HttpStatusMixin, APITestCase):
         token = Token.objects.create(user=user)
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
-        self.manufacturer = Manufacturer.objects.create(name='Test Manufacturer 1', slug='test-manufacturer-1')
+        self.manufacturer = Manufacturer.objects.create(
+            name='Test Manufacturer 1', slug='test-manufacturer-1')
         self.devicetype = DeviceType.objects.create(
             manufacturer=self.manufacturer, model='Test Device Type 1', slug='test-device-type-1'
         )
@@ -903,7 +951,8 @@ class ConsolePortTemplateTest(HttpStatusMixin, APITestCase):
 
     def test_get_consoleporttemplate(self):
 
-        url = reverse('dcim-api:consoleporttemplate-detail', kwargs={'pk': self.consoleporttemplate1.pk})
+        url = reverse('dcim-api:consoleporttemplate-detail',
+                      kwargs={'pk': self.consoleporttemplate1.pk})
         response = self.client.get(url, **self.header)
 
         self.assertEqual(response.data['name'], self.consoleporttemplate1.name)
@@ -927,8 +976,10 @@ class ConsolePortTemplateTest(HttpStatusMixin, APITestCase):
 
         self.assertHttpStatus(response, status.HTTP_201_CREATED)
         self.assertEqual(ConsolePortTemplate.objects.count(), 4)
-        consoleporttemplate4 = ConsolePortTemplate.objects.get(pk=response.data['id'])
-        self.assertEqual(consoleporttemplate4.device_type_id, data['device_type'])
+        consoleporttemplate4 = ConsolePortTemplate.objects.get(
+            pk=response.data['id'])
+        self.assertEqual(consoleporttemplate4.device_type_id,
+                         data['device_type'])
         self.assertEqual(consoleporttemplate4.name, data['name'])
 
     def test_create_consoleporttemplate_bulk(self):
@@ -964,17 +1015,20 @@ class ConsolePortTemplateTest(HttpStatusMixin, APITestCase):
             'name': 'Test CP Template X',
         }
 
-        url = reverse('dcim-api:consoleporttemplate-detail', kwargs={'pk': self.consoleporttemplate1.pk})
+        url = reverse('dcim-api:consoleporttemplate-detail',
+                      kwargs={'pk': self.consoleporttemplate1.pk})
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
         self.assertEqual(ConsolePortTemplate.objects.count(), 3)
-        consoleporttemplate1 = ConsolePortTemplate.objects.get(pk=response.data['id'])
+        consoleporttemplate1 = ConsolePortTemplate.objects.get(
+            pk=response.data['id'])
         self.assertEqual(consoleporttemplate1.name, data['name'])
 
     def test_delete_consoleporttemplate(self):
 
-        url = reverse('dcim-api:consoleporttemplate-detail', kwargs={'pk': self.consoleporttemplate1.pk})
+        url = reverse('dcim-api:consoleporttemplate-detail',
+                      kwargs={'pk': self.consoleporttemplate1.pk})
         response = self.client.delete(url, **self.header)
 
         self.assertHttpStatus(response, status.HTTP_204_NO_CONTENT)
@@ -989,7 +1043,8 @@ class ConsoleServerPortTemplateTest(HttpStatusMixin, APITestCase):
         token = Token.objects.create(user=user)
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
-        self.manufacturer = Manufacturer.objects.create(name='Test Manufacturer 1', slug='test-manufacturer-1')
+        self.manufacturer = Manufacturer.objects.create(
+            name='Test Manufacturer 1', slug='test-manufacturer-1')
         self.devicetype = DeviceType.objects.create(
             manufacturer=self.manufacturer, model='Test Device Type 1', slug='test-device-type-1'
         )
@@ -1005,10 +1060,12 @@ class ConsoleServerPortTemplateTest(HttpStatusMixin, APITestCase):
 
     def test_get_consoleserverporttemplate(self):
 
-        url = reverse('dcim-api:consoleserverporttemplate-detail', kwargs={'pk': self.consoleserverporttemplate1.pk})
+        url = reverse('dcim-api:consoleserverporttemplate-detail',
+                      kwargs={'pk': self.consoleserverporttemplate1.pk})
         response = self.client.get(url, **self.header)
 
-        self.assertEqual(response.data['name'], self.consoleserverporttemplate1.name)
+        self.assertEqual(response.data['name'],
+                         self.consoleserverporttemplate1.name)
 
     def test_list_consoleserverporttemplates(self):
 
@@ -1029,8 +1086,10 @@ class ConsoleServerPortTemplateTest(HttpStatusMixin, APITestCase):
 
         self.assertHttpStatus(response, status.HTTP_201_CREATED)
         self.assertEqual(ConsoleServerPortTemplate.objects.count(), 4)
-        consoleserverporttemplate4 = ConsoleServerPortTemplate.objects.get(pk=response.data['id'])
-        self.assertEqual(consoleserverporttemplate4.device_type_id, data['device_type'])
+        consoleserverporttemplate4 = ConsoleServerPortTemplate.objects.get(
+            pk=response.data['id'])
+        self.assertEqual(
+            consoleserverporttemplate4.device_type_id, data['device_type'])
         self.assertEqual(consoleserverporttemplate4.name, data['name'])
 
     def test_create_consoleserverporttemplate_bulk(self):
@@ -1066,17 +1125,20 @@ class ConsoleServerPortTemplateTest(HttpStatusMixin, APITestCase):
             'name': 'Test CSP Template X',
         }
 
-        url = reverse('dcim-api:consoleserverporttemplate-detail', kwargs={'pk': self.consoleserverporttemplate1.pk})
+        url = reverse('dcim-api:consoleserverporttemplate-detail',
+                      kwargs={'pk': self.consoleserverporttemplate1.pk})
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
         self.assertEqual(ConsoleServerPortTemplate.objects.count(), 3)
-        consoleserverporttemplate1 = ConsoleServerPortTemplate.objects.get(pk=response.data['id'])
+        consoleserverporttemplate1 = ConsoleServerPortTemplate.objects.get(
+            pk=response.data['id'])
         self.assertEqual(consoleserverporttemplate1.name, data['name'])
 
     def test_delete_consoleserverporttemplate(self):
 
-        url = reverse('dcim-api:consoleserverporttemplate-detail', kwargs={'pk': self.consoleserverporttemplate1.pk})
+        url = reverse('dcim-api:consoleserverporttemplate-detail',
+                      kwargs={'pk': self.consoleserverporttemplate1.pk})
         response = self.client.delete(url, **self.header)
 
         self.assertHttpStatus(response, status.HTTP_204_NO_CONTENT)
@@ -1091,7 +1153,8 @@ class PowerPortTemplateTest(HttpStatusMixin, APITestCase):
         token = Token.objects.create(user=user)
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
-        self.manufacturer = Manufacturer.objects.create(name='Test Manufacturer 1', slug='test-manufacturer-1')
+        self.manufacturer = Manufacturer.objects.create(
+            name='Test Manufacturer 1', slug='test-manufacturer-1')
         self.devicetype = DeviceType.objects.create(
             manufacturer=self.manufacturer, model='Test Device Type 1', slug='test-device-type-1'
         )
@@ -1107,7 +1170,8 @@ class PowerPortTemplateTest(HttpStatusMixin, APITestCase):
 
     def test_get_powerporttemplate(self):
 
-        url = reverse('dcim-api:powerporttemplate-detail', kwargs={'pk': self.powerporttemplate1.pk})
+        url = reverse('dcim-api:powerporttemplate-detail',
+                      kwargs={'pk': self.powerporttemplate1.pk})
         response = self.client.get(url, **self.header)
 
         self.assertEqual(response.data['name'], self.powerporttemplate1.name)
@@ -1131,8 +1195,10 @@ class PowerPortTemplateTest(HttpStatusMixin, APITestCase):
 
         self.assertHttpStatus(response, status.HTTP_201_CREATED)
         self.assertEqual(PowerPortTemplate.objects.count(), 4)
-        powerporttemplate4 = PowerPortTemplate.objects.get(pk=response.data['id'])
-        self.assertEqual(powerporttemplate4.device_type_id, data['device_type'])
+        powerporttemplate4 = PowerPortTemplate.objects.get(
+            pk=response.data['id'])
+        self.assertEqual(powerporttemplate4.device_type_id,
+                         data['device_type'])
         self.assertEqual(powerporttemplate4.name, data['name'])
 
     def test_create_powerporttemplate_bulk(self):
@@ -1168,17 +1234,20 @@ class PowerPortTemplateTest(HttpStatusMixin, APITestCase):
             'name': 'Test PP Template X',
         }
 
-        url = reverse('dcim-api:powerporttemplate-detail', kwargs={'pk': self.powerporttemplate1.pk})
+        url = reverse('dcim-api:powerporttemplate-detail',
+                      kwargs={'pk': self.powerporttemplate1.pk})
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
         self.assertEqual(PowerPortTemplate.objects.count(), 3)
-        powerporttemplate1 = PowerPortTemplate.objects.get(pk=response.data['id'])
+        powerporttemplate1 = PowerPortTemplate.objects.get(
+            pk=response.data['id'])
         self.assertEqual(powerporttemplate1.name, data['name'])
 
     def test_delete_powerporttemplate(self):
 
-        url = reverse('dcim-api:powerporttemplate-detail', kwargs={'pk': self.powerporttemplate1.pk})
+        url = reverse('dcim-api:powerporttemplate-detail',
+                      kwargs={'pk': self.powerporttemplate1.pk})
         response = self.client.delete(url, **self.header)
 
         self.assertHttpStatus(response, status.HTTP_204_NO_CONTENT)
@@ -1193,7 +1262,8 @@ class PowerOutletTemplateTest(HttpStatusMixin, APITestCase):
         token = Token.objects.create(user=user)
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
-        self.manufacturer = Manufacturer.objects.create(name='Test Manufacturer 1', slug='test-manufacturer-1')
+        self.manufacturer = Manufacturer.objects.create(
+            name='Test Manufacturer 1', slug='test-manufacturer-1')
         self.devicetype = DeviceType.objects.create(
             manufacturer=self.manufacturer, model='Test Device Type 1', slug='test-device-type-1'
         )
@@ -1209,7 +1279,8 @@ class PowerOutletTemplateTest(HttpStatusMixin, APITestCase):
 
     def test_get_poweroutlettemplate(self):
 
-        url = reverse('dcim-api:poweroutlettemplate-detail', kwargs={'pk': self.poweroutlettemplate1.pk})
+        url = reverse('dcim-api:poweroutlettemplate-detail',
+                      kwargs={'pk': self.poweroutlettemplate1.pk})
         response = self.client.get(url, **self.header)
 
         self.assertEqual(response.data['name'], self.poweroutlettemplate1.name)
@@ -1233,8 +1304,10 @@ class PowerOutletTemplateTest(HttpStatusMixin, APITestCase):
 
         self.assertHttpStatus(response, status.HTTP_201_CREATED)
         self.assertEqual(PowerOutletTemplate.objects.count(), 4)
-        poweroutlettemplate4 = PowerOutletTemplate.objects.get(pk=response.data['id'])
-        self.assertEqual(poweroutlettemplate4.device_type_id, data['device_type'])
+        poweroutlettemplate4 = PowerOutletTemplate.objects.get(
+            pk=response.data['id'])
+        self.assertEqual(poweroutlettemplate4.device_type_id,
+                         data['device_type'])
         self.assertEqual(poweroutlettemplate4.name, data['name'])
 
     def test_create_poweroutlettemplate_bulk(self):
@@ -1270,17 +1343,20 @@ class PowerOutletTemplateTest(HttpStatusMixin, APITestCase):
             'name': 'Test PO Template X',
         }
 
-        url = reverse('dcim-api:poweroutlettemplate-detail', kwargs={'pk': self.poweroutlettemplate1.pk})
+        url = reverse('dcim-api:poweroutlettemplate-detail',
+                      kwargs={'pk': self.poweroutlettemplate1.pk})
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
         self.assertEqual(PowerOutletTemplate.objects.count(), 3)
-        poweroutlettemplate1 = PowerOutletTemplate.objects.get(pk=response.data['id'])
+        poweroutlettemplate1 = PowerOutletTemplate.objects.get(
+            pk=response.data['id'])
         self.assertEqual(poweroutlettemplate1.name, data['name'])
 
     def test_delete_poweroutlettemplate(self):
 
-        url = reverse('dcim-api:poweroutlettemplate-detail', kwargs={'pk': self.poweroutlettemplate1.pk})
+        url = reverse('dcim-api:poweroutlettemplate-detail',
+                      kwargs={'pk': self.poweroutlettemplate1.pk})
         response = self.client.delete(url, **self.header)
 
         self.assertHttpStatus(response, status.HTTP_204_NO_CONTENT)
@@ -1295,7 +1371,8 @@ class InterfaceTemplateTest(HttpStatusMixin, APITestCase):
         token = Token.objects.create(user=user)
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
-        self.manufacturer = Manufacturer.objects.create(name='Test Manufacturer 1', slug='test-manufacturer-1')
+        self.manufacturer = Manufacturer.objects.create(
+            name='Test Manufacturer 1', slug='test-manufacturer-1')
         self.devicetype = DeviceType.objects.create(
             manufacturer=self.manufacturer, model='Test Device Type 1', slug='test-device-type-1'
         )
@@ -1311,7 +1388,8 @@ class InterfaceTemplateTest(HttpStatusMixin, APITestCase):
 
     def test_get_interfacetemplate(self):
 
-        url = reverse('dcim-api:interfacetemplate-detail', kwargs={'pk': self.interfacetemplate1.pk})
+        url = reverse('dcim-api:interfacetemplate-detail',
+                      kwargs={'pk': self.interfacetemplate1.pk})
         response = self.client.get(url, **self.header)
 
         self.assertEqual(response.data['name'], self.interfacetemplate1.name)
@@ -1335,8 +1413,10 @@ class InterfaceTemplateTest(HttpStatusMixin, APITestCase):
 
         self.assertHttpStatus(response, status.HTTP_201_CREATED)
         self.assertEqual(InterfaceTemplate.objects.count(), 4)
-        interfacetemplate4 = InterfaceTemplate.objects.get(pk=response.data['id'])
-        self.assertEqual(interfacetemplate4.device_type_id, data['device_type'])
+        interfacetemplate4 = InterfaceTemplate.objects.get(
+            pk=response.data['id'])
+        self.assertEqual(interfacetemplate4.device_type_id,
+                         data['device_type'])
         self.assertEqual(interfacetemplate4.name, data['name'])
 
     def test_create_interfacetemplate_bulk(self):
@@ -1372,17 +1452,20 @@ class InterfaceTemplateTest(HttpStatusMixin, APITestCase):
             'name': 'Test Interface Template X',
         }
 
-        url = reverse('dcim-api:interfacetemplate-detail', kwargs={'pk': self.interfacetemplate1.pk})
+        url = reverse('dcim-api:interfacetemplate-detail',
+                      kwargs={'pk': self.interfacetemplate1.pk})
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
         self.assertEqual(InterfaceTemplate.objects.count(), 3)
-        interfacetemplate1 = InterfaceTemplate.objects.get(pk=response.data['id'])
+        interfacetemplate1 = InterfaceTemplate.objects.get(
+            pk=response.data['id'])
         self.assertEqual(interfacetemplate1.name, data['name'])
 
     def test_delete_interfacetemplate(self):
 
-        url = reverse('dcim-api:interfacetemplate-detail', kwargs={'pk': self.interfacetemplate1.pk})
+        url = reverse('dcim-api:interfacetemplate-detail',
+                      kwargs={'pk': self.interfacetemplate1.pk})
         response = self.client.delete(url, **self.header)
 
         self.assertHttpStatus(response, status.HTTP_204_NO_CONTENT)
@@ -1397,7 +1480,8 @@ class DeviceBayTemplateTest(HttpStatusMixin, APITestCase):
         token = Token.objects.create(user=user)
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
-        self.manufacturer = Manufacturer.objects.create(name='Test Manufacturer 1', slug='test-manufacturer-1')
+        self.manufacturer = Manufacturer.objects.create(
+            name='Test Manufacturer 1', slug='test-manufacturer-1')
         self.devicetype = DeviceType.objects.create(
             manufacturer=self.manufacturer, model='Test Device Type 1', slug='test-device-type-1'
         )
@@ -1413,7 +1497,8 @@ class DeviceBayTemplateTest(HttpStatusMixin, APITestCase):
 
     def test_get_devicebaytemplate(self):
 
-        url = reverse('dcim-api:devicebaytemplate-detail', kwargs={'pk': self.devicebaytemplate1.pk})
+        url = reverse('dcim-api:devicebaytemplate-detail',
+                      kwargs={'pk': self.devicebaytemplate1.pk})
         response = self.client.get(url, **self.header)
 
         self.assertEqual(response.data['name'], self.devicebaytemplate1.name)
@@ -1437,8 +1522,10 @@ class DeviceBayTemplateTest(HttpStatusMixin, APITestCase):
 
         self.assertHttpStatus(response, status.HTTP_201_CREATED)
         self.assertEqual(DeviceBayTemplate.objects.count(), 4)
-        devicebaytemplate4 = DeviceBayTemplate.objects.get(pk=response.data['id'])
-        self.assertEqual(devicebaytemplate4.device_type_id, data['device_type'])
+        devicebaytemplate4 = DeviceBayTemplate.objects.get(
+            pk=response.data['id'])
+        self.assertEqual(devicebaytemplate4.device_type_id,
+                         data['device_type'])
         self.assertEqual(devicebaytemplate4.name, data['name'])
 
     def test_create_devicebaytemplate_bulk(self):
@@ -1474,17 +1561,20 @@ class DeviceBayTemplateTest(HttpStatusMixin, APITestCase):
             'name': 'Test Device Bay Template X',
         }
 
-        url = reverse('dcim-api:devicebaytemplate-detail', kwargs={'pk': self.devicebaytemplate1.pk})
+        url = reverse('dcim-api:devicebaytemplate-detail',
+                      kwargs={'pk': self.devicebaytemplate1.pk})
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
         self.assertEqual(DeviceBayTemplate.objects.count(), 3)
-        devicebaytemplate1 = DeviceBayTemplate.objects.get(pk=response.data['id'])
+        devicebaytemplate1 = DeviceBayTemplate.objects.get(
+            pk=response.data['id'])
         self.assertEqual(devicebaytemplate1.name, data['name'])
 
     def test_delete_devicebaytemplate(self):
 
-        url = reverse('dcim-api:devicebaytemplate-detail', kwargs={'pk': self.devicebaytemplate1.pk})
+        url = reverse('dcim-api:devicebaytemplate-detail',
+                      kwargs={'pk': self.devicebaytemplate1.pk})
         response = self.client.delete(url, **self.header)
 
         self.assertHttpStatus(response, status.HTTP_204_NO_CONTENT)
@@ -1511,7 +1601,8 @@ class DeviceRoleTest(HttpStatusMixin, APITestCase):
 
     def test_get_devicerole(self):
 
-        url = reverse('dcim-api:devicerole-detail', kwargs={'pk': self.devicerole1.pk})
+        url = reverse('dcim-api:devicerole-detail',
+                      kwargs={'pk': self.devicerole1.pk})
         response = self.client.get(url, **self.header)
 
         self.assertEqual(response.data['name'], self.devicerole1.name)
@@ -1578,7 +1669,8 @@ class DeviceRoleTest(HttpStatusMixin, APITestCase):
             'color': '00ffff',
         }
 
-        url = reverse('dcim-api:devicerole-detail', kwargs={'pk': self.devicerole1.pk})
+        url = reverse('dcim-api:devicerole-detail',
+                      kwargs={'pk': self.devicerole1.pk})
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
@@ -1590,7 +1682,8 @@ class DeviceRoleTest(HttpStatusMixin, APITestCase):
 
     def test_delete_devicerole(self):
 
-        url = reverse('dcim-api:devicerole-detail', kwargs={'pk': self.devicerole1.pk})
+        url = reverse('dcim-api:devicerole-detail',
+                      kwargs={'pk': self.devicerole1.pk})
         response = self.client.delete(url, **self.header)
 
         self.assertHttpStatus(response, status.HTTP_204_NO_CONTENT)
@@ -1605,13 +1698,17 @@ class PlatformTest(HttpStatusMixin, APITestCase):
         token = Token.objects.create(user=user)
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
-        self.platform1 = Platform.objects.create(name='Test Platform 1', slug='test-platform-1')
-        self.platform2 = Platform.objects.create(name='Test Platform 2', slug='test-platform-2')
-        self.platform3 = Platform.objects.create(name='Test Platform 3', slug='test-platform-3')
+        self.platform1 = Platform.objects.create(
+            name='Test Platform 1', slug='test-platform-1')
+        self.platform2 = Platform.objects.create(
+            name='Test Platform 2', slug='test-platform-2')
+        self.platform3 = Platform.objects.create(
+            name='Test Platform 3', slug='test-platform-3')
 
     def test_get_platform(self):
 
-        url = reverse('dcim-api:platform-detail', kwargs={'pk': self.platform1.pk})
+        url = reverse('dcim-api:platform-detail',
+                      kwargs={'pk': self.platform1.pk})
         response = self.client.get(url, **self.header)
 
         self.assertEqual(response.data['name'], self.platform1.name)
@@ -1672,7 +1769,8 @@ class PlatformTest(HttpStatusMixin, APITestCase):
             'slug': 'test-platform-x',
         }
 
-        url = reverse('dcim-api:platform-detail', kwargs={'pk': self.platform1.pk})
+        url = reverse('dcim-api:platform-detail',
+                      kwargs={'pk': self.platform1.pk})
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
@@ -1683,7 +1781,8 @@ class PlatformTest(HttpStatusMixin, APITestCase):
 
     def test_delete_platform(self):
 
-        url = reverse('dcim-api:platform-detail', kwargs={'pk': self.platform1.pk})
+        url = reverse('dcim-api:platform-detail',
+                      kwargs={'pk': self.platform1.pk})
         response = self.client.delete(url, **self.header)
 
         self.assertHttpStatus(response, status.HTTP_204_NO_CONTENT)
@@ -1698,9 +1797,12 @@ class DeviceTest(HttpStatusMixin, APITestCase):
         token = Token.objects.create(user=user)
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
-        self.site1 = Site.objects.create(name='Test Site 1', slug='test-site-1')
-        self.site2 = Site.objects.create(name='Test Site 2', slug='test-site-2')
-        manufacturer = Manufacturer.objects.create(name='Test Manufacturer 1', slug='test-manufacturer-1')
+        self.site1 = Site.objects.create(
+            name='Test Site 1', slug='test-site-1')
+        self.site2 = Site.objects.create(
+            name='Test Site 2', slug='test-site-2')
+        manufacturer = Manufacturer.objects.create(
+            name='Test Manufacturer 1', slug='test-manufacturer-1')
         self.devicetype1 = DeviceType.objects.create(
             manufacturer=manufacturer, model='Test Device Type 1', slug='test-device-type-1'
         )
@@ -1827,7 +1929,8 @@ class ConsolePortTest(HttpStatusMixin, APITestCase):
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
         site = Site.objects.create(name='Test Site 1', slug='test-site-1')
-        manufacturer = Manufacturer.objects.create(name='Test Manufacturer 1', slug='test-manufacturer-1')
+        manufacturer = Manufacturer.objects.create(
+            name='Test Manufacturer 1', slug='test-manufacturer-1')
         devicetype = DeviceType.objects.create(
             manufacturer=manufacturer, model='Test Device Type 1', slug='test-device-type-1'
         )
@@ -1837,13 +1940,17 @@ class ConsolePortTest(HttpStatusMixin, APITestCase):
         self.device = Device.objects.create(
             device_type=devicetype, device_role=devicerole, name='Test Device 1', site=site
         )
-        self.consoleport1 = ConsolePort.objects.create(device=self.device, name='Test Console Port 1')
-        self.consoleport2 = ConsolePort.objects.create(device=self.device, name='Test Console Port 2')
-        self.consoleport3 = ConsolePort.objects.create(device=self.device, name='Test Console Port 3')
+        self.consoleport1 = ConsolePort.objects.create(
+            device=self.device, name='Test Console Port 1')
+        self.consoleport2 = ConsolePort.objects.create(
+            device=self.device, name='Test Console Port 2')
+        self.consoleport3 = ConsolePort.objects.create(
+            device=self.device, name='Test Console Port 3')
 
     def test_get_consoleport(self):
 
-        url = reverse('dcim-api:consoleport-detail', kwargs={'pk': self.consoleport1.pk})
+        url = reverse('dcim-api:consoleport-detail',
+                      kwargs={'pk': self.consoleport1.pk})
         response = self.client.get(url, **self.header)
 
         self.assertEqual(response.data['name'], self.consoleport1.name)
@@ -1899,7 +2006,8 @@ class ConsolePortTest(HttpStatusMixin, APITestCase):
 
     def test_update_consoleport(self):
 
-        consoleserverport = ConsoleServerPort.objects.create(device=self.device, name='Test CS Port 1')
+        consoleserverport = ConsoleServerPort.objects.create(
+            device=self.device, name='Test CS Port 1')
 
         data = {
             'device': self.device.pk,
@@ -1907,7 +2015,8 @@ class ConsolePortTest(HttpStatusMixin, APITestCase):
             'cs_port': consoleserverport.pk,
         }
 
-        url = reverse('dcim-api:consoleport-detail', kwargs={'pk': self.consoleport1.pk})
+        url = reverse('dcim-api:consoleport-detail',
+                      kwargs={'pk': self.consoleport1.pk})
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
@@ -1918,7 +2027,8 @@ class ConsolePortTest(HttpStatusMixin, APITestCase):
 
     def test_delete_consoleport(self):
 
-        url = reverse('dcim-api:consoleport-detail', kwargs={'pk': self.consoleport1.pk})
+        url = reverse('dcim-api:consoleport-detail',
+                      kwargs={'pk': self.consoleport1.pk})
         response = self.client.delete(url, **self.header)
 
         self.assertHttpStatus(response, status.HTTP_204_NO_CONTENT)
@@ -1934,7 +2044,8 @@ class ConsoleServerPortTest(HttpStatusMixin, APITestCase):
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
         site = Site.objects.create(name='Test Site 1', slug='test-site-1')
-        manufacturer = Manufacturer.objects.create(name='Test Manufacturer 1', slug='test-manufacturer-1')
+        manufacturer = Manufacturer.objects.create(
+            name='Test Manufacturer 1', slug='test-manufacturer-1')
         devicetype = DeviceType.objects.create(
             manufacturer=manufacturer, model='Test Device Type 1', slug='test-device-type-1', is_console_server=True
         )
@@ -1944,13 +2055,17 @@ class ConsoleServerPortTest(HttpStatusMixin, APITestCase):
         self.device = Device.objects.create(
             device_type=devicetype, device_role=devicerole, name='Test Device 1', site=site
         )
-        self.consoleserverport1 = ConsoleServerPort.objects.create(device=self.device, name='Test CS Port 1')
-        self.consoleserverport2 = ConsoleServerPort.objects.create(device=self.device, name='Test CS Port 2')
-        self.consoleserverport3 = ConsoleServerPort.objects.create(device=self.device, name='Test CS Port 3')
+        self.consoleserverport1 = ConsoleServerPort.objects.create(
+            device=self.device, name='Test CS Port 1')
+        self.consoleserverport2 = ConsoleServerPort.objects.create(
+            device=self.device, name='Test CS Port 2')
+        self.consoleserverport3 = ConsoleServerPort.objects.create(
+            device=self.device, name='Test CS Port 3')
 
     def test_get_consoleserverport(self):
 
-        url = reverse('dcim-api:consoleserverport-detail', kwargs={'pk': self.consoleserverport1.pk})
+        url = reverse('dcim-api:consoleserverport-detail',
+                      kwargs={'pk': self.consoleserverport1.pk})
         response = self.client.get(url, **self.header)
 
         self.assertEqual(response.data['name'], self.consoleserverport1.name)
@@ -1974,7 +2089,8 @@ class ConsoleServerPortTest(HttpStatusMixin, APITestCase):
 
         self.assertHttpStatus(response, status.HTTP_201_CREATED)
         self.assertEqual(ConsoleServerPort.objects.count(), 4)
-        consoleserverport4 = ConsoleServerPort.objects.get(pk=response.data['id'])
+        consoleserverport4 = ConsoleServerPort.objects.get(
+            pk=response.data['id'])
         self.assertEqual(consoleserverport4.device_id, data['device'])
         self.assertEqual(consoleserverport4.name, data['name'])
 
@@ -2011,17 +2127,20 @@ class ConsoleServerPortTest(HttpStatusMixin, APITestCase):
             'name': 'Test CS Port X',
         }
 
-        url = reverse('dcim-api:consoleserverport-detail', kwargs={'pk': self.consoleserverport1.pk})
+        url = reverse('dcim-api:consoleserverport-detail',
+                      kwargs={'pk': self.consoleserverport1.pk})
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
         self.assertEqual(ConsoleServerPort.objects.count(), 3)
-        consoleserverport1 = ConsoleServerPort.objects.get(pk=response.data['id'])
+        consoleserverport1 = ConsoleServerPort.objects.get(
+            pk=response.data['id'])
         self.assertEqual(consoleserverport1.name, data['name'])
 
     def test_delete_consoleserverport(self):
 
-        url = reverse('dcim-api:consoleserverport-detail', kwargs={'pk': self.consoleserverport1.pk})
+        url = reverse('dcim-api:consoleserverport-detail',
+                      kwargs={'pk': self.consoleserverport1.pk})
         response = self.client.delete(url, **self.header)
 
         self.assertHttpStatus(response, status.HTTP_204_NO_CONTENT)
@@ -2037,7 +2156,8 @@ class PowerPortTest(HttpStatusMixin, APITestCase):
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
         site = Site.objects.create(name='Test Site 1', slug='test-site-1')
-        manufacturer = Manufacturer.objects.create(name='Test Manufacturer 1', slug='test-manufacturer-1')
+        manufacturer = Manufacturer.objects.create(
+            name='Test Manufacturer 1', slug='test-manufacturer-1')
         devicetype = DeviceType.objects.create(
             manufacturer=manufacturer, model='Test Device Type 1', slug='test-device-type-1'
         )
@@ -2047,13 +2167,17 @@ class PowerPortTest(HttpStatusMixin, APITestCase):
         self.device = Device.objects.create(
             device_type=devicetype, device_role=devicerole, name='Test Device 1', site=site
         )
-        self.powerport1 = PowerPort.objects.create(device=self.device, name='Test Power Port 1')
-        self.powerport2 = PowerPort.objects.create(device=self.device, name='Test Power Port 2')
-        self.powerport3 = PowerPort.objects.create(device=self.device, name='Test Power Port 3')
+        self.powerport1 = PowerPort.objects.create(
+            device=self.device, name='Test Power Port 1')
+        self.powerport2 = PowerPort.objects.create(
+            device=self.device, name='Test Power Port 2')
+        self.powerport3 = PowerPort.objects.create(
+            device=self.device, name='Test Power Port 3')
 
     def test_get_powerport(self):
 
-        url = reverse('dcim-api:powerport-detail', kwargs={'pk': self.powerport1.pk})
+        url = reverse('dcim-api:powerport-detail',
+                      kwargs={'pk': self.powerport1.pk})
         response = self.client.get(url, **self.header)
 
         self.assertEqual(response.data['name'], self.powerport1.name)
@@ -2109,7 +2233,8 @@ class PowerPortTest(HttpStatusMixin, APITestCase):
 
     def test_update_powerport(self):
 
-        poweroutlet = PowerOutlet.objects.create(device=self.device, name='Test Power Outlet 1')
+        poweroutlet = PowerOutlet.objects.create(
+            device=self.device, name='Test Power Outlet 1')
 
         data = {
             'device': self.device.pk,
@@ -2117,7 +2242,8 @@ class PowerPortTest(HttpStatusMixin, APITestCase):
             'power_outlet': poweroutlet.pk,
         }
 
-        url = reverse('dcim-api:powerport-detail', kwargs={'pk': self.powerport1.pk})
+        url = reverse('dcim-api:powerport-detail',
+                      kwargs={'pk': self.powerport1.pk})
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
@@ -2128,7 +2254,8 @@ class PowerPortTest(HttpStatusMixin, APITestCase):
 
     def test_delete_powerport(self):
 
-        url = reverse('dcim-api:powerport-detail', kwargs={'pk': self.powerport1.pk})
+        url = reverse('dcim-api:powerport-detail',
+                      kwargs={'pk': self.powerport1.pk})
         response = self.client.delete(url, **self.header)
 
         self.assertHttpStatus(response, status.HTTP_204_NO_CONTENT)
@@ -2144,7 +2271,8 @@ class PowerOutletTest(HttpStatusMixin, APITestCase):
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
         site = Site.objects.create(name='Test Site 1', slug='test-site-1')
-        manufacturer = Manufacturer.objects.create(name='Test Manufacturer 1', slug='test-manufacturer-1')
+        manufacturer = Manufacturer.objects.create(
+            name='Test Manufacturer 1', slug='test-manufacturer-1')
         devicetype = DeviceType.objects.create(
             manufacturer=manufacturer, model='Test Device Type 1', slug='test-device-type-1', is_pdu=True
         )
@@ -2154,13 +2282,17 @@ class PowerOutletTest(HttpStatusMixin, APITestCase):
         self.device = Device.objects.create(
             device_type=devicetype, device_role=devicerole, name='Test Device 1', site=site
         )
-        self.poweroutlet1 = PowerOutlet.objects.create(device=self.device, name='Test Power Outlet 1')
-        self.poweroutlet2 = PowerOutlet.objects.create(device=self.device, name='Test Power Outlet 2')
-        self.poweroutlet3 = PowerOutlet.objects.create(device=self.device, name='Test Power Outlet 3')
+        self.poweroutlet1 = PowerOutlet.objects.create(
+            device=self.device, name='Test Power Outlet 1')
+        self.poweroutlet2 = PowerOutlet.objects.create(
+            device=self.device, name='Test Power Outlet 2')
+        self.poweroutlet3 = PowerOutlet.objects.create(
+            device=self.device, name='Test Power Outlet 3')
 
     def test_get_poweroutlet(self):
 
-        url = reverse('dcim-api:poweroutlet-detail', kwargs={'pk': self.poweroutlet1.pk})
+        url = reverse('dcim-api:poweroutlet-detail',
+                      kwargs={'pk': self.poweroutlet1.pk})
         response = self.client.get(url, **self.header)
 
         self.assertEqual(response.data['name'], self.poweroutlet1.name)
@@ -2221,7 +2353,8 @@ class PowerOutletTest(HttpStatusMixin, APITestCase):
             'name': 'Test Power Outlet X',
         }
 
-        url = reverse('dcim-api:poweroutlet-detail', kwargs={'pk': self.poweroutlet1.pk})
+        url = reverse('dcim-api:poweroutlet-detail',
+                      kwargs={'pk': self.poweroutlet1.pk})
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
@@ -2231,7 +2364,8 @@ class PowerOutletTest(HttpStatusMixin, APITestCase):
 
     def test_delete_poweroutlet(self):
 
-        url = reverse('dcim-api:poweroutlet-detail', kwargs={'pk': self.poweroutlet1.pk})
+        url = reverse('dcim-api:poweroutlet-detail',
+                      kwargs={'pk': self.poweroutlet1.pk})
         response = self.client.delete(url, **self.header)
 
         self.assertHttpStatus(response, status.HTTP_204_NO_CONTENT)
@@ -2247,7 +2381,8 @@ class InterfaceTest(HttpStatusMixin, APITestCase):
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
         site = Site.objects.create(name='Test Site 1', slug='test-site-1')
-        manufacturer = Manufacturer.objects.create(name='Test Manufacturer 1', slug='test-manufacturer-1')
+        manufacturer = Manufacturer.objects.create(
+            name='Test Manufacturer 1', slug='test-manufacturer-1')
         devicetype = DeviceType.objects.create(
             manufacturer=manufacturer, model='Test Device Type 1', slug='test-device-type-1', is_network_device=True
         )
@@ -2257,9 +2392,12 @@ class InterfaceTest(HttpStatusMixin, APITestCase):
         self.device = Device.objects.create(
             device_type=devicetype, device_role=devicerole, name='Test Device 1', site=site
         )
-        self.interface1 = Interface.objects.create(device=self.device, name='Test Interface 1')
-        self.interface2 = Interface.objects.create(device=self.device, name='Test Interface 2')
-        self.interface3 = Interface.objects.create(device=self.device, name='Test Interface 3')
+        self.interface1 = Interface.objects.create(
+            device=self.device, name='Test Interface 1')
+        self.interface2 = Interface.objects.create(
+            device=self.device, name='Test Interface 2')
+        self.interface3 = Interface.objects.create(
+            device=self.device, name='Test Interface 3')
 
         self.vlan1 = VLAN.objects.create(name="Test VLAN 1", vid=1)
         self.vlan2 = VLAN.objects.create(name="Test VLAN 2", vid=2)
@@ -2267,7 +2405,8 @@ class InterfaceTest(HttpStatusMixin, APITestCase):
 
     def test_get_interface(self):
 
-        url = reverse('dcim-api:interface-detail', kwargs={'pk': self.interface1.pk})
+        url = reverse('dcim-api:interface-detail',
+                      kwargs={'pk': self.interface1.pk})
         response = self.client.get(url, **self.header)
 
         self.assertEqual(response.data['name'], self.interface1.name)
@@ -2287,11 +2426,13 @@ class InterfaceTest(HttpStatusMixin, APITestCase):
             source='http://example.com/graphs.py?interface={{ obj.name }}&foo=3'
         )
 
-        url = reverse('dcim-api:interface-graphs', kwargs={'pk': self.interface1.pk})
+        url = reverse('dcim-api:interface-graphs',
+                      kwargs={'pk': self.interface1.pk})
         response = self.client.get(url, **self.header)
 
         self.assertEqual(len(response.data), 3)
-        self.assertEqual(response.data[0]['embed_url'], 'http://example.com/graphs.py?interface=Test Interface 1&foo=1')
+        self.assertEqual(
+            response.data[0]['embed_url'], 'http://example.com/graphs.py?interface=Test Interface 1&foo=1')
 
     def test_list_interfaces(self):
 
@@ -2416,7 +2557,8 @@ class InterfaceTest(HttpStatusMixin, APITestCase):
             'lag': lag_interface.pk,
         }
 
-        url = reverse('dcim-api:interface-detail', kwargs={'pk': self.interface1.pk})
+        url = reverse('dcim-api:interface-detail',
+                      kwargs={'pk': self.interface1.pk})
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
@@ -2427,7 +2569,8 @@ class InterfaceTest(HttpStatusMixin, APITestCase):
 
     def test_delete_interface(self):
 
-        url = reverse('dcim-api:interface-detail', kwargs={'pk': self.interface1.pk})
+        url = reverse('dcim-api:interface-detail',
+                      kwargs={'pk': self.interface1.pk})
         response = self.client.delete(url, **self.header)
 
         self.assertHttpStatus(response, status.HTTP_204_NO_CONTENT)
@@ -2443,7 +2586,8 @@ class DeviceBayTest(HttpStatusMixin, APITestCase):
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
         site = Site.objects.create(name='Test Site 1', slug='test-site-1')
-        manufacturer = Manufacturer.objects.create(name='Test Manufacturer 1', slug='test-manufacturer-1')
+        manufacturer = Manufacturer.objects.create(
+            name='Test Manufacturer 1', slug='test-manufacturer-1')
         self.devicetype1 = DeviceType.objects.create(
             manufacturer=manufacturer, model='Parent Device Type', slug='parent-device-type',
             subdevice_role=SUBDEVICE_ROLE_PARENT
@@ -2461,13 +2605,17 @@ class DeviceBayTest(HttpStatusMixin, APITestCase):
         self.child_device = Device.objects.create(
             device_type=self.devicetype2, device_role=devicerole, name='Child Device 1', site=site
         )
-        self.devicebay1 = DeviceBay.objects.create(device=self.parent_device, name='Test Device Bay 1')
-        self.devicebay2 = DeviceBay.objects.create(device=self.parent_device, name='Test Device Bay 2')
-        self.devicebay3 = DeviceBay.objects.create(device=self.parent_device, name='Test Device Bay 3')
+        self.devicebay1 = DeviceBay.objects.create(
+            device=self.parent_device, name='Test Device Bay 1')
+        self.devicebay2 = DeviceBay.objects.create(
+            device=self.parent_device, name='Test Device Bay 2')
+        self.devicebay3 = DeviceBay.objects.create(
+            device=self.parent_device, name='Test Device Bay 3')
 
     def test_get_devicebay(self):
 
-        url = reverse('dcim-api:devicebay-detail', kwargs={'pk': self.devicebay1.pk})
+        url = reverse('dcim-api:devicebay-detail',
+                      kwargs={'pk': self.devicebay1.pk})
         response = self.client.get(url, **self.header)
 
         self.assertEqual(response.data['name'], self.devicebay1.name)
@@ -2495,7 +2643,8 @@ class DeviceBayTest(HttpStatusMixin, APITestCase):
         devicebay4 = DeviceBay.objects.get(pk=response.data['id'])
         self.assertEqual(devicebay4.device_id, data['device'])
         self.assertEqual(devicebay4.name, data['name'])
-        self.assertEqual(devicebay4.installed_device_id, data['installed_device'])
+        self.assertEqual(devicebay4.installed_device_id,
+                         data['installed_device'])
 
     def test_create_devicebay_bulk(self):
 
@@ -2531,18 +2680,21 @@ class DeviceBayTest(HttpStatusMixin, APITestCase):
             'installed_device': self.child_device.pk,
         }
 
-        url = reverse('dcim-api:devicebay-detail', kwargs={'pk': self.devicebay1.pk})
+        url = reverse('dcim-api:devicebay-detail',
+                      kwargs={'pk': self.devicebay1.pk})
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
         self.assertEqual(DeviceBay.objects.count(), 3)
         devicebay1 = DeviceBay.objects.get(pk=response.data['id'])
         self.assertEqual(devicebay1.name, data['name'])
-        self.assertEqual(devicebay1.installed_device_id, data['installed_device'])
+        self.assertEqual(devicebay1.installed_device_id,
+                         data['installed_device'])
 
     def test_delete_devicebay(self):
 
-        url = reverse('dcim-api:devicebay-detail', kwargs={'pk': self.devicebay1.pk})
+        url = reverse('dcim-api:devicebay-detail',
+                      kwargs={'pk': self.devicebay1.pk})
         response = self.client.delete(url, **self.header)
 
         self.assertHttpStatus(response, status.HTTP_204_NO_CONTENT)
@@ -2558,7 +2710,8 @@ class InventoryItemTest(HttpStatusMixin, APITestCase):
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
         site = Site.objects.create(name='Test Site 1', slug='test-site-1')
-        self.manufacturer = Manufacturer.objects.create(name='Test Manufacturer 1', slug='test-manufacturer-1')
+        self.manufacturer = Manufacturer.objects.create(
+            name='Test Manufacturer 1', slug='test-manufacturer-1')
         devicetype = DeviceType.objects.create(
             manufacturer=self.manufacturer, model='Test Device Type 1', slug='test-device-type-1'
         )
@@ -2568,13 +2721,17 @@ class InventoryItemTest(HttpStatusMixin, APITestCase):
         self.device = Device.objects.create(
             device_type=devicetype, device_role=devicerole, name='Test Device 1', site=site
         )
-        self.inventoryitem1 = InventoryItem.objects.create(device=self.device, name='Test Inventory Item 1')
-        self.inventoryitem2 = InventoryItem.objects.create(device=self.device, name='Test Inventory Item 2')
-        self.inventoryitem3 = InventoryItem.objects.create(device=self.device, name='Test Inventory Item 3')
+        self.inventoryitem1 = InventoryItem.objects.create(
+            device=self.device, name='Test Inventory Item 1')
+        self.inventoryitem2 = InventoryItem.objects.create(
+            device=self.device, name='Test Inventory Item 2')
+        self.inventoryitem3 = InventoryItem.objects.create(
+            device=self.device, name='Test Inventory Item 3')
 
     def test_get_inventoryitem(self):
 
-        url = reverse('dcim-api:inventoryitem-detail', kwargs={'pk': self.inventoryitem1.pk})
+        url = reverse('dcim-api:inventoryitem-detail',
+                      kwargs={'pk': self.inventoryitem1.pk})
         response = self.client.get(url, **self.header)
 
         self.assertEqual(response.data['name'], self.inventoryitem1.name)
@@ -2647,7 +2804,8 @@ class InventoryItemTest(HttpStatusMixin, APITestCase):
             'manufacturer': self.manufacturer.pk,
         }
 
-        url = reverse('dcim-api:inventoryitem-detail', kwargs={'pk': self.inventoryitem1.pk})
+        url = reverse('dcim-api:inventoryitem-detail',
+                      kwargs={'pk': self.inventoryitem1.pk})
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
@@ -2660,7 +2818,8 @@ class InventoryItemTest(HttpStatusMixin, APITestCase):
 
     def test_delete_inventoryitem(self):
 
-        url = reverse('dcim-api:inventoryitem-detail', kwargs={'pk': self.inventoryitem1.pk})
+        url = reverse('dcim-api:inventoryitem-detail',
+                      kwargs={'pk': self.inventoryitem1.pk})
         response = self.client.delete(url, **self.header)
 
         self.assertHttpStatus(response, status.HTTP_204_NO_CONTENT)
@@ -2676,7 +2835,8 @@ class ConsoleConnectionTest(HttpStatusMixin, APITestCase):
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
         site = Site.objects.create(name='Test Site 1', slug='test-site-1')
-        manufacturer = Manufacturer.objects.create(name='Test Manufacturer 1', slug='test-manufacturer-1')
+        manufacturer = Manufacturer.objects.create(
+            name='Test Manufacturer 1', slug='test-manufacturer-1')
         devicetype = DeviceType.objects.create(
             manufacturer=manufacturer, model='Test Device Type 1', slug='test-device-type-1'
         )
@@ -2689,9 +2849,12 @@ class ConsoleConnectionTest(HttpStatusMixin, APITestCase):
         device2 = Device.objects.create(
             device_type=devicetype, device_role=devicerole, name='Test Device 2', site=site
         )
-        cs_port1 = ConsoleServerPort.objects.create(device=device1, name='Test CS Port 1')
-        cs_port2 = ConsoleServerPort.objects.create(device=device1, name='Test CS Port 2')
-        cs_port3 = ConsoleServerPort.objects.create(device=device1, name='Test CS Port 3')
+        cs_port1 = ConsoleServerPort.objects.create(
+            device=device1, name='Test CS Port 1')
+        cs_port2 = ConsoleServerPort.objects.create(
+            device=device1, name='Test CS Port 2')
+        cs_port3 = ConsoleServerPort.objects.create(
+            device=device1, name='Test CS Port 3')
         ConsolePort.objects.create(
             device=device2, cs_port=cs_port1, name='Test Console Port 1', connection_status=True
         )
@@ -2719,7 +2882,8 @@ class PowerConnectionTest(HttpStatusMixin, APITestCase):
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
         site = Site.objects.create(name='Test Site 1', slug='test-site-1')
-        manufacturer = Manufacturer.objects.create(name='Test Manufacturer 1', slug='test-manufacturer-1')
+        manufacturer = Manufacturer.objects.create(
+            name='Test Manufacturer 1', slug='test-manufacturer-1')
         devicetype = DeviceType.objects.create(
             manufacturer=manufacturer, model='Test Device Type 1', slug='test-device-type-1'
         )
@@ -2732,9 +2896,12 @@ class PowerConnectionTest(HttpStatusMixin, APITestCase):
         device2 = Device.objects.create(
             device_type=devicetype, device_role=devicerole, name='Test Device 2', site=site
         )
-        power_outlet1 = PowerOutlet.objects.create(device=device1, name='Test Power Outlet 1')
-        power_outlet2 = PowerOutlet.objects.create(device=device1, name='Test Power Outlet 2')
-        power_outlet3 = PowerOutlet.objects.create(device=device1, name='Test Power Outlet 3')
+        power_outlet1 = PowerOutlet.objects.create(
+            device=device1, name='Test Power Outlet 1')
+        power_outlet2 = PowerOutlet.objects.create(
+            device=device1, name='Test Power Outlet 2')
+        power_outlet3 = PowerOutlet.objects.create(
+            device=device1, name='Test Power Outlet 3')
         PowerPort.objects.create(
             device=device2, power_outlet=power_outlet1, name='Test Power Port 1', connection_status=True
         )
@@ -2762,7 +2929,8 @@ class InterfaceConnectionTest(HttpStatusMixin, APITestCase):
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
         site = Site.objects.create(name='Test Site 1', slug='test-site-1')
-        manufacturer = Manufacturer.objects.create(name='Test Manufacturer 1', slug='test-manufacturer-1')
+        manufacturer = Manufacturer.objects.create(
+            name='Test Manufacturer 1', slug='test-manufacturer-1')
         devicetype = DeviceType.objects.create(
             manufacturer=manufacturer, model='Test Device Type 1', slug='test-device-type-1'
         )
@@ -2772,18 +2940,30 @@ class InterfaceConnectionTest(HttpStatusMixin, APITestCase):
         self.device = Device.objects.create(
             device_type=devicetype, device_role=devicerole, name='Test Device 1', site=site
         )
-        self.interface1 = Interface.objects.create(device=self.device, name='Test Interface 1')
-        self.interface2 = Interface.objects.create(device=self.device, name='Test Interface 2')
-        self.interface3 = Interface.objects.create(device=self.device, name='Test Interface 3')
-        self.interface4 = Interface.objects.create(device=self.device, name='Test Interface 4')
-        self.interface5 = Interface.objects.create(device=self.device, name='Test Interface 5')
-        self.interface6 = Interface.objects.create(device=self.device, name='Test Interface 6')
-        self.interface7 = Interface.objects.create(device=self.device, name='Test Interface 7')
-        self.interface8 = Interface.objects.create(device=self.device, name='Test Interface 8')
-        self.interface9 = Interface.objects.create(device=self.device, name='Test Interface 9')
-        self.interface10 = Interface.objects.create(device=self.device, name='Test Interface 10')
-        self.interface11 = Interface.objects.create(device=self.device, name='Test Interface 11')
-        self.interface12 = Interface.objects.create(device=self.device, name='Test Interface 12')
+        self.interface1 = Interface.objects.create(
+            device=self.device, name='Test Interface 1')
+        self.interface2 = Interface.objects.create(
+            device=self.device, name='Test Interface 2')
+        self.interface3 = Interface.objects.create(
+            device=self.device, name='Test Interface 3')
+        self.interface4 = Interface.objects.create(
+            device=self.device, name='Test Interface 4')
+        self.interface5 = Interface.objects.create(
+            device=self.device, name='Test Interface 5')
+        self.interface6 = Interface.objects.create(
+            device=self.device, name='Test Interface 6')
+        self.interface7 = Interface.objects.create(
+            device=self.device, name='Test Interface 7')
+        self.interface8 = Interface.objects.create(
+            device=self.device, name='Test Interface 8')
+        self.interface9 = Interface.objects.create(
+            device=self.device, name='Test Interface 9')
+        self.interface10 = Interface.objects.create(
+            device=self.device, name='Test Interface 10')
+        self.interface11 = Interface.objects.create(
+            device=self.device, name='Test Interface 11')
+        self.interface12 = Interface.objects.create(
+            device=self.device, name='Test Interface 12')
         self.interfaceconnection1 = InterfaceConnection.objects.create(
             interface_a=self.interface1, interface_b=self.interface2
         )
@@ -2796,11 +2976,14 @@ class InterfaceConnectionTest(HttpStatusMixin, APITestCase):
 
     def test_get_interfaceconnection(self):
 
-        url = reverse('dcim-api:interfaceconnection-detail', kwargs={'pk': self.interfaceconnection1.pk})
+        url = reverse('dcim-api:interfaceconnection-detail',
+                      kwargs={'pk': self.interfaceconnection1.pk})
         response = self.client.get(url, **self.header)
 
-        self.assertEqual(response.data['interface_a']['id'], self.interfaceconnection1.interface_a_id)
-        self.assertEqual(response.data['interface_b']['id'], self.interfaceconnection1.interface_b_id)
+        self.assertEqual(
+            response.data['interface_a']['id'], self.interfaceconnection1.interface_a_id)
+        self.assertEqual(
+            response.data['interface_b']['id'], self.interfaceconnection1.interface_b_id)
 
     def test_list_interfaceconnections(self):
 
@@ -2821,9 +3004,12 @@ class InterfaceConnectionTest(HttpStatusMixin, APITestCase):
 
         self.assertHttpStatus(response, status.HTTP_201_CREATED)
         self.assertEqual(InterfaceConnection.objects.count(), 4)
-        interfaceconnection4 = InterfaceConnection.objects.get(pk=response.data['id'])
-        self.assertEqual(interfaceconnection4.interface_a_id, data['interface_a'])
-        self.assertEqual(interfaceconnection4.interface_b_id, data['interface_b'])
+        interfaceconnection4 = InterfaceConnection.objects.get(
+            pk=response.data['id'])
+        self.assertEqual(interfaceconnection4.interface_a_id,
+                         data['interface_a'])
+        self.assertEqual(interfaceconnection4.interface_b_id,
+                         data['interface_b'])
 
     def test_create_interfaceconnection_bulk(self):
 
@@ -2847,9 +3033,12 @@ class InterfaceConnectionTest(HttpStatusMixin, APITestCase):
 
         self.assertHttpStatus(response, status.HTTP_201_CREATED)
         self.assertEqual(InterfaceConnection.objects.count(), 6)
-        self.assertEqual(response.data[0]['interface_a'], data[0]['interface_a'])
-        self.assertEqual(response.data[1]['interface_a'], data[1]['interface_a'])
-        self.assertEqual(response.data[2]['interface_a'], data[2]['interface_a'])
+        self.assertEqual(
+            response.data[0]['interface_a'], data[0]['interface_a'])
+        self.assertEqual(
+            response.data[1]['interface_a'], data[1]['interface_a'])
+        self.assertEqual(
+            response.data[2]['interface_a'], data[2]['interface_a'])
 
     def test_update_interfaceconnection(self):
 
@@ -2861,19 +3050,25 @@ class InterfaceConnectionTest(HttpStatusMixin, APITestCase):
             'connection_status': new_connection_status,
         }
 
-        url = reverse('dcim-api:interfaceconnection-detail', kwargs={'pk': self.interfaceconnection1.pk})
+        url = reverse('dcim-api:interfaceconnection-detail',
+                      kwargs={'pk': self.interfaceconnection1.pk})
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
         self.assertEqual(InterfaceConnection.objects.count(), 3)
-        interfaceconnection1 = InterfaceConnection.objects.get(pk=response.data['id'])
-        self.assertEqual(interfaceconnection1.interface_a_id, data['interface_a'])
-        self.assertEqual(interfaceconnection1.interface_b_id, data['interface_b'])
-        self.assertEqual(interfaceconnection1.connection_status, data['connection_status'])
+        interfaceconnection1 = InterfaceConnection.objects.get(
+            pk=response.data['id'])
+        self.assertEqual(interfaceconnection1.interface_a_id,
+                         data['interface_a'])
+        self.assertEqual(interfaceconnection1.interface_b_id,
+                         data['interface_b'])
+        self.assertEqual(interfaceconnection1.connection_status,
+                         data['connection_status'])
 
     def test_delete_interfaceconnection(self):
 
-        url = reverse('dcim-api:interfaceconnection-detail', kwargs={'pk': self.interfaceconnection1.pk})
+        url = reverse('dcim-api:interfaceconnection-detail',
+                      kwargs={'pk': self.interfaceconnection1.pk})
         response = self.client.delete(url, **self.header)
 
         self.assertHttpStatus(response, status.HTTP_204_NO_CONTENT)
@@ -2888,9 +3083,12 @@ class ConnectedDeviceTest(HttpStatusMixin, APITestCase):
         token = Token.objects.create(user=user)
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
-        self.site1 = Site.objects.create(name='Test Site 1', slug='test-site-1')
-        self.site2 = Site.objects.create(name='Test Site 2', slug='test-site-2')
-        manufacturer = Manufacturer.objects.create(name='Test Manufacturer 1', slug='test-manufacturer-1')
+        self.site1 = Site.objects.create(
+            name='Test Site 1', slug='test-site-1')
+        self.site2 = Site.objects.create(
+            name='Test Site 2', slug='test-site-2')
+        manufacturer = Manufacturer.objects.create(
+            name='Test Manufacturer 1', slug='test-manufacturer-1')
         self.devicetype1 = DeviceType.objects.create(
             manufacturer=manufacturer, model='Test Device Type 1', slug='test-device-type-1'
         )
@@ -2909,14 +3107,18 @@ class ConnectedDeviceTest(HttpStatusMixin, APITestCase):
         self.device2 = Device.objects.create(
             device_type=self.devicetype1, device_role=self.devicerole1, name='TestDevice2', site=self.site1
         )
-        self.interface1 = Interface.objects.create(device=self.device1, name='eth0')
-        self.interface2 = Interface.objects.create(device=self.device2, name='eth0')
-        InterfaceConnection.objects.create(interface_a=self.interface1, interface_b=self.interface2)
+        self.interface1 = Interface.objects.create(
+            device=self.device1, name='eth0')
+        self.interface2 = Interface.objects.create(
+            device=self.device2, name='eth0')
+        InterfaceConnection.objects.create(
+            interface_a=self.interface1, interface_b=self.interface2)
 
     def test_get_connected_device(self):
 
         url = reverse('dcim-api:connected-device-list')
-        response = self.client.get(url + '?peer-device=TestDevice2&peer-interface=eth0', **self.header)
+        response = self.client.get(
+            url + '?peer-device=TestDevice2&peer-interface=eth0', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
         self.assertEqual(response.data['name'], self.device1.name)
@@ -2931,7 +3133,8 @@ class VirtualChassisTest(HttpStatusMixin, APITestCase):
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
         site = Site.objects.create(name='Test Site', slug='test-site')
-        manufacturer = Manufacturer.objects.create(name='Test Manufacturer', slug='test-manufacturer')
+        manufacturer = Manufacturer.objects.create(
+            name='Test Manufacturer', slug='test-manufacturer')
         device_type = DeviceType.objects.create(
             manufacturer=manufacturer, model='Test Device Type', slug='test-device-type'
         )
@@ -2968,35 +3171,51 @@ class VirtualChassisTest(HttpStatusMixin, APITestCase):
             device_type=device_type, device_role=device_role, name='StackSwitch9', site=site
         )
         for i in range(0, 13):
-            Interface.objects.create(device=self.device1, name='1/{}'.format(i), form_factor=IFACE_FF_1GE_FIXED)
+            Interface.objects.create(
+                device=self.device1, name='1/{}'.format(i), form_factor=IFACE_FF_1GE_FIXED)
         for i in range(0, 13):
-            Interface.objects.create(device=self.device2, name='2/{}'.format(i), form_factor=IFACE_FF_1GE_FIXED)
+            Interface.objects.create(
+                device=self.device2, name='2/{}'.format(i), form_factor=IFACE_FF_1GE_FIXED)
         for i in range(0, 13):
-            Interface.objects.create(device=self.device3, name='3/{}'.format(i), form_factor=IFACE_FF_1GE_FIXED)
+            Interface.objects.create(
+                device=self.device3, name='3/{}'.format(i), form_factor=IFACE_FF_1GE_FIXED)
         for i in range(0, 13):
-            Interface.objects.create(device=self.device4, name='1/{}'.format(i), form_factor=IFACE_FF_1GE_FIXED)
+            Interface.objects.create(
+                device=self.device4, name='1/{}'.format(i), form_factor=IFACE_FF_1GE_FIXED)
         for i in range(0, 13):
-            Interface.objects.create(device=self.device5, name='2/{}'.format(i), form_factor=IFACE_FF_1GE_FIXED)
+            Interface.objects.create(
+                device=self.device5, name='2/{}'.format(i), form_factor=IFACE_FF_1GE_FIXED)
         for i in range(0, 13):
-            Interface.objects.create(device=self.device6, name='3/{}'.format(i), form_factor=IFACE_FF_1GE_FIXED)
+            Interface.objects.create(
+                device=self.device6, name='3/{}'.format(i), form_factor=IFACE_FF_1GE_FIXED)
         for i in range(0, 13):
-            Interface.objects.create(device=self.device7, name='1/{}'.format(i), form_factor=IFACE_FF_1GE_FIXED)
+            Interface.objects.create(
+                device=self.device7, name='1/{}'.format(i), form_factor=IFACE_FF_1GE_FIXED)
         for i in range(0, 13):
-            Interface.objects.create(device=self.device8, name='2/{}'.format(i), form_factor=IFACE_FF_1GE_FIXED)
+            Interface.objects.create(
+                device=self.device8, name='2/{}'.format(i), form_factor=IFACE_FF_1GE_FIXED)
         for i in range(0, 13):
-            Interface.objects.create(device=self.device9, name='3/{}'.format(i), form_factor=IFACE_FF_1GE_FIXED)
+            Interface.objects.create(
+                device=self.device9, name='3/{}'.format(i), form_factor=IFACE_FF_1GE_FIXED)
 
         # Create two VirtualChassis with three members each
-        self.vc1 = VirtualChassis.objects.create(master=self.device1, domain='test-domain-1')
-        Device.objects.filter(pk=self.device2.pk).update(virtual_chassis=self.vc1, vc_position=2)
-        Device.objects.filter(pk=self.device3.pk).update(virtual_chassis=self.vc1, vc_position=3)
-        self.vc2 = VirtualChassis.objects.create(master=self.device4, domain='test-domain-2')
-        Device.objects.filter(pk=self.device5.pk).update(virtual_chassis=self.vc2, vc_position=2)
-        Device.objects.filter(pk=self.device6.pk).update(virtual_chassis=self.vc2, vc_position=3)
+        self.vc1 = VirtualChassis.objects.create(
+            master=self.device1, domain='test-domain-1')
+        Device.objects.filter(pk=self.device2.pk).update(
+            virtual_chassis=self.vc1, vc_position=2)
+        Device.objects.filter(pk=self.device3.pk).update(
+            virtual_chassis=self.vc1, vc_position=3)
+        self.vc2 = VirtualChassis.objects.create(
+            master=self.device4, domain='test-domain-2')
+        Device.objects.filter(pk=self.device5.pk).update(
+            virtual_chassis=self.vc2, vc_position=2)
+        Device.objects.filter(pk=self.device6.pk).update(
+            virtual_chassis=self.vc2, vc_position=3)
 
     def test_get_virtualchassis(self):
 
-        url = reverse('dcim-api:virtualchassis-detail', kwargs={'pk': self.vc1.pk})
+        url = reverse('dcim-api:virtualchassis-detail',
+                      kwargs={'pk': self.vc1.pk})
         response = self.client.get(url, **self.header)
 
         self.assertEqual(response.data['domain'], self.vc1.domain)
@@ -3024,7 +3243,8 @@ class VirtualChassisTest(HttpStatusMixin, APITestCase):
         self.assertEqual(vc3.domain, data['domain'])
 
         # Verify that the master device was automatically assigned to the VC
-        self.assertTrue(Device.objects.filter(pk=vc3.master.pk, virtual_chassis=vc3.pk).exists())
+        self.assertTrue(Device.objects.filter(
+            pk=vc3.master.pk, virtual_chassis=vc3.pk).exists())
 
     def test_create_virtualchassis_bulk(self):
 
@@ -3061,7 +3281,8 @@ class VirtualChassisTest(HttpStatusMixin, APITestCase):
             'domain': 'test-domain-x',
         }
 
-        url = reverse('dcim-api:virtualchassis-detail', kwargs={'pk': self.vc1.pk})
+        url = reverse('dcim-api:virtualchassis-detail',
+                      kwargs={'pk': self.vc1.pk})
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
@@ -3072,7 +3293,8 @@ class VirtualChassisTest(HttpStatusMixin, APITestCase):
 
     def test_delete_virtualchassis(self):
 
-        url = reverse('dcim-api:virtualchassis-detail', kwargs={'pk': self.vc1.pk})
+        url = reverse('dcim-api:virtualchassis-detail',
+                      kwargs={'pk': self.vc1.pk})
         response = self.client.delete(url, **self.header)
 
         self.assertHttpStatus(response, status.HTTP_204_NO_CONTENT)
@@ -3081,5 +3303,6 @@ class VirtualChassisTest(HttpStatusMixin, APITestCase):
         # Verify that all VC members have had their VC-related fields nullified
         for d in [self.device1, self.device2, self.device3]:
             self.assertTrue(
-                Device.objects.filter(pk=d.pk, virtual_chassis=None, vc_position=None, vc_priority=None)
+                Device.objects.filter(
+                    pk=d.pk, virtual_chassis=None, vc_position=None, vc_priority=None)
             )

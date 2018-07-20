@@ -17,10 +17,12 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='VLANGroup',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.AutoField(auto_created=True,
+                                        primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=50)),
                 ('slug', models.SlugField()),
-                ('site', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='vlan_groups', to='dcim.Site')),
+                ('site', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE,
+                                           related_name='vlan_groups', to='dcim.Site')),
             ],
             options={
                 'ordering': ['site', 'name'],
@@ -29,7 +31,8 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='vlan',
             name='group',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='vlans', to='ipam.VLANGroup'),
+            field=models.ForeignKey(
+                blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='vlans', to='ipam.VLANGroup'),
         ),
         migrations.AlterUniqueTogether(
             name='vlangroup',

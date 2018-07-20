@@ -15,7 +15,8 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='site',
             name='contact_email',
-            field=models.EmailField(blank=True, max_length=254, verbose_name=b'Contact E-mail'),
+            field=models.EmailField(
+                blank=True, max_length=254, verbose_name=b'Contact E-mail'),
         ),
         migrations.AddField(
             model_name='site',

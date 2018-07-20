@@ -3,23 +3,47 @@ from __future__ import unicode_literals
 import django_filters
 from django.contrib.auth.models import User
 from django.db.models import Q
+from extras.filters import CustomFieldFilterSet
+
 from netaddr import EUI
 from netaddr.core import AddrFormatError
-
-from extras.filters import CustomFieldFilterSet
 from tenancy.models import Tenant
-from utilities.filters import NullableCharFieldFilter, NumericInFilter
+from utilities.filters import NullableCharFieldFilter
+from utilities.filters import NumericInFilter
 from virtualization.models import Cluster
-from .constants import (
-    DEVICE_STATUS_CHOICES, IFACE_FF_LAG, NONCONNECTABLE_IFACE_TYPES, SITE_STATUS_CHOICES, VIRTUAL_IFACE_TYPES,
-    WIRELESS_IFACE_TYPES,
-)
-from .models import (
-    ConsolePort, ConsolePortTemplate, ConsoleServerPort, ConsoleServerPortTemplate, Device, DeviceBay,
-    DeviceBayTemplate, DeviceRole, DeviceType, Interface, InterfaceConnection, InterfaceTemplate, Manufacturer,
-    InventoryItem, Platform, PowerOutlet, PowerOutletTemplate, PowerPort, PowerPortTemplate, Rack, RackGroup,
-    RackReservation, RackRole, Region, Site, VirtualChassis,
-)
+
+from .constants import DEVICE_STATUS_CHOICES
+from .constants import IFACE_FF_LAG
+from .constants import NONCONNECTABLE_IFACE_TYPES
+from .constants import SITE_STATUS_CHOICES
+from .constants import VIRTUAL_IFACE_TYPES
+from .constants import WIRELESS_IFACE_TYPES
+from .models import ConsolePort
+from .models import ConsolePortTemplate
+from .models import ConsoleServerPort
+from .models import ConsoleServerPortTemplate
+from .models import Device
+from .models import DeviceBay
+from .models import DeviceBayTemplate
+from .models import DeviceRole
+from .models import DeviceType
+from .models import Interface
+from .models import InterfaceConnection
+from .models import InterfaceTemplate
+from .models import InventoryItem
+from .models import Manufacturer
+from .models import Platform
+from .models import PowerOutlet
+from .models import PowerOutletTemplate
+from .models import PowerPort
+from .models import PowerPortTemplate
+from .models import Rack
+from .models import RackGroup
+from .models import RackReservation
+from .models import RackRole
+from .models import Region
+from .models import Site
+from .models import VirtualChassis
 
 
 class RegionFilter(django_filters.FilterSet):
@@ -85,7 +109,8 @@ class SiteFilter(CustomFieldFilterSet, django_filters.FilterSet):
 
     class Meta:
         model = Site
-        fields = ['q', 'name', 'slug', 'facility', 'asn', 'contact_name', 'contact_phone', 'contact_email']
+        fields = ['q', 'name', 'slug', 'facility', 'asn',
+                  'contact_name', 'contact_phone', 'contact_email']
 
     def search(self, queryset, name, value):
         if not value.strip():
@@ -509,7 +534,7 @@ class DeviceFilter(CustomFieldFilterSet, django_filters.FilterSet):
             Q(name__icontains=value) |
             Q(serial__icontains=value.strip()) |
             Q(inventory_items__serial__icontains=value.strip()) |
-            Q(asset_tag__icontains=value.strip()) |
+            Q(asset_tag=value.strip()) |
             Q(comments__icontains=value)
         ).distinct()
 
@@ -578,41 +603,30 @@ class PowerOutletFilter(DeviceComponentFilterSet):
 
 class InterfaceFilter(django_filters.FilterSet):
     """
-    Not using DeviceComponentFilterSet for Interfaces because we need to glean the ordering logic from the parent
-    Device's DeviceType.
+    Not using DeviceComponentFilterSet for Interfaces because we need
+    to clean the ordering logic from the parent Device's DeviceType.
     """
-    device = django_filters.CharFilter(
-        method='filter_device',
-        name='name',
-        label='Device',
-    )
-    device_id = django_filters.NumberFilter(
-        method='filter_device',
-        name='pk',
-        label='Device (ID)',
-    )
-    type = django_filters.CharFilter(
-        method='filter_type',
-        label='Interface type',
-    )
-    lag_id = django_filters.ModelMultipleChoiceFilter(
-        name='lag',
-        queryset=Interface.objects.all(),
-        label='LAG interface (ID)',
-    )
     mac_address = django_filters.CharFilter(
         method='_mac_address',
         label='MAC address',
     )
+    allowed_vlans = django_filters.CharFilter(
+        method='_allowed_vlans',
+        label='Allowed VLANs',
+    )
 
     class Meta:
         model = Interface
-        fields = ['name', 'form_factor', 'enabled', 'mtu', 'mgmt_only']
+        fields = ['name', "type", 'enabled',
+                  "untagged_vlan", "is_trunk",
+                  "allowed_vlans"]
 
     def filter_device(self, queryset, name, value):
         try:
-            device = Device.objects.select_related('device_type').get(**{name: value})
-            vc_interface_ids = [i['id'] for i in device.vc_interfaces.values('id')]
+            device = Device.objects.select_related(
+                'device_type').get(**{name: value})
+            vc_interface_ids = [i['id']
+                                for i in device.vc_interfaces.values('id')]
             ordering = device.device_type.interface_ordering
             return queryset.filter(pk__in=vc_interface_ids).order_naturally(ordering)
         except Device.DoesNotExist:
@@ -627,6 +641,12 @@ class InterfaceFilter(django_filters.FilterSet):
             'lag': queryset.filter(form_factor=IFACE_FF_LAG),
         }.get(value, queryset.none())
 
+    def _allowed_vlans(self, queryset, name, value):
+        value = value.strip()
+        if not value:
+            return queryset
+        return queryset.filter(allowed_vlans__icontains=value)
+
     def _mac_address(self, queryset, name, value):
         value = value.strip()
         if not value:
@@ -635,7 +655,8 @@ class InterfaceFilter(django_filters.FilterSet):
             mac = EUI(value.strip())
             return queryset.filter(mac_address=mac)
         except AddrFormatError:
-            return queryset.none()
+            # if not given a full MAC, we try partial match
+            return queryset.filter(mac_address__icontains=value.strip())
 
 
 class DeviceBayFilter(DeviceComponentFilterSet):
@@ -668,7 +689,8 @@ class InventoryItemFilter(DeviceComponentFilterSet):
 
     class Meta:
         model = InventoryItem
-        fields = ['name', 'part_id', 'serial', 'asset_tag', 'discovered']
+        fields = ['name', 'part_id', 'serial', 'asset_tag', 'discovered',
+                  "device_type"]
 
     def search(self, queryset, name, value):
         if not value.strip():

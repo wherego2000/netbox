@@ -15,6 +15,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='devicerole',
             name='vm_role',
-            field=models.BooleanField(default=True, help_text='Virtual machines may be assigned to this role', verbose_name='VM Role'),
+            field=models.BooleanField(
+                default=True, help_text='Virtual machines may be assigned to this role', verbose_name='VM Role'),
         ),
     ]

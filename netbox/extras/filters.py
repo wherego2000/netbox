@@ -66,9 +66,11 @@ class CustomFieldFilterSet(django_filters.FilterSet):
         super(CustomFieldFilterSet, self).__init__(*args, **kwargs)
 
         obj_type = ContentType.objects.get_for_model(self._meta.model)
-        custom_fields = CustomField.objects.filter(obj_type=obj_type).exclude(filter_logic=CF_FILTER_DISABLED)
+        custom_fields = CustomField.objects.filter(
+            obj_type=obj_type).exclude(filter_logic=CF_FILTER_DISABLED)
         for cf in custom_fields:
-            self.filters['cf_{}'.format(cf.name)] = CustomFieldFilter(name=cf.name, custom_field=cf)
+            self.filters['cf_{}'.format(cf.name)] = CustomFieldFilter(
+                name=cf.name, custom_field=cf)
 
 
 class GraphFilter(django_filters.FilterSet):

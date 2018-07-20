@@ -17,11 +17,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='device',
             name='primary_ip4',
-            field=models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='primary_ip4_for', to='ipam.IPAddress', verbose_name=b'Primary IPv4'),
+            field=models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                       related_name='primary_ip4_for', to='ipam.IPAddress', verbose_name=b'Primary IPv4'),
         ),
         migrations.AddField(
             model_name='device',
             name='primary_ip6',
-            field=models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='primary_ip6_for', to='ipam.IPAddress', verbose_name=b'Primary IPv6'),
+            field=models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                       related_name='primary_ip6_for', to='ipam.IPAddress', verbose_name=b'Primary IPv6'),
         ),
     ]

@@ -16,6 +16,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='rack',
             name='u_height',
-            field=models.PositiveSmallIntegerField(default=42, validators=[django.core.validators.MinValueValidator(1), django.core.validators.MaxValueValidator(100)], verbose_name=b'Height (U)'),
+            field=models.PositiveSmallIntegerField(default=42, validators=[django.core.validators.MinValueValidator(
+                1), django.core.validators.MaxValueValidator(100)], verbose_name=b'Height (U)'),
         ),
     ]

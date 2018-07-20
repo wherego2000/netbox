@@ -15,6 +15,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='tenant',
             name='description',
-            field=models.CharField(blank=True, help_text='Long-form name (optional)', max_length=100),
+            field=models.CharField(
+                blank=True, help_text='Long-form name (optional)', max_length=100),
         ),
     ]

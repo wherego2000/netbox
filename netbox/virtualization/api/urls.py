@@ -9,6 +9,7 @@ class VirtualizationRootView(routers.APIRootView):
     """
     Virtualization API root view
     """
+
     def get_view_name(self):
         return 'Virtualization'
 
@@ -17,7 +18,8 @@ router = routers.DefaultRouter()
 router.APIRootView = VirtualizationRootView
 
 # Field choices
-router.register(r'_choices', views.VirtualizationFieldChoicesViewSet, base_name='field-choice')
+router.register(
+    r'_choices', views.VirtualizationFieldChoicesViewSet, base_name='field-choice')
 
 # Clusters
 router.register(r'cluster-types', views.ClusterTypeViewSet)

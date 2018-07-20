@@ -15,6 +15,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='devicetype',
             name='part_number',
-            field=models.CharField(blank=True, help_text=b'Discrete part number (optional)', max_length=50),
+            field=models.CharField(
+                blank=True, help_text=b'Discrete part number (optional)', max_length=50),
         ),
     ]

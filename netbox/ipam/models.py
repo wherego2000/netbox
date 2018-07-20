@@ -1,39 +1,48 @@
 from __future__ import unicode_literals
 
-import netaddr
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
 from django.core.exceptions import ValidationError
-from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.validators import MaxValueValidator
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Q
 from django.db.models.expressions import RawSQL
 from django.urls import reverse
 from django.utils.encoding import python_2_unicode_compatible
+from extras.models import CustomFieldModel
+from extras.models import CustomFieldValue
 
-from dcim.models import Interface
-from extras.models import CustomFieldModel, CustomFieldValue
+import netaddr
 from tenancy.models import Tenant
 from utilities.models import CreatedUpdatedModel
+
 from .constants import *
-from .fields import IPNetworkField, IPAddressField
+from .fields import IPAddressField
+from .fields import IPNetworkField
 from .querysets import PrefixQuerySet
 
 
 @python_2_unicode_compatible
 class VRF(CreatedUpdatedModel, CustomFieldModel):
     """
-    A virtual routing and forwarding (VRF) table represents a discrete layer three forwarding domain (e.g. a routing
-    table). Prefixes and IPAddresses can optionally be assigned to VRFs. (Prefixes and IPAddresses not assigned to a VRF
-    are said to exist in the "global" table.)
+    A virtual routing and forwarding (VRF) table represents a discrete
+    layer three forwarding domain (e.g. a routing table). Prefixes and
+    IPAddresses can optionally be assigned to VRFs. (Prefixes and
+    IPAddresses not assigned to a VRF are said to exist in the
+    "global" table.)
     """
     name = models.CharField(max_length=50)
-    rd = models.CharField(max_length=21, unique=True, verbose_name='Route distinguisher')
-    tenant = models.ForeignKey(Tenant, related_name='vrfs', blank=True, null=True, on_delete=models.PROTECT)
-    enforce_unique = models.BooleanField(default=True, verbose_name='Enforce unique space',
+    rd = models.CharField(max_length=21, unique=True,
+                          verbose_name='Route distinguisher')
+    tenant = models.ForeignKey(Tenant, related_name='vrfs', blank=True,
+                               null=True, on_delete=models.PROTECT)
+    enforce_unique = models.BooleanField(default=True,
+                                         verbose_name='Enforce unique space',
                                          help_text="Prevent duplicate prefixes/IP addresses within this VRF")
     description = models.CharField(max_length=100, blank=True)
-    custom_field_values = GenericRelation(CustomFieldValue, content_type_field='obj_type', object_id_field='obj_id')
+    custom_field_values = GenericRelation(
+        CustomFieldValue, content_type_field='obj_type', object_id_field='obj_id')
 
     csv_headers = ['name', 'rd', 'tenant', 'enforce_unique', 'description']
 
@@ -67,8 +76,10 @@ class VRF(CreatedUpdatedModel, CustomFieldModel):
 @python_2_unicode_compatible
 class RIR(models.Model):
     """
-    A Regional Internet Registry (RIR) is responsible for the allocation of a large portion of the global IP address
-    space. This can be an organization like ARIN or RIPE, or a governing standard such as RFC 1918.
+    A Regional Internet Registry (RIR) is responsible for the
+    allocation of a large portion of the global IP address space. This
+    can be an organization like ARIN or RIPE, or a governing standard
+    such as RFC 1918.
     """
     name = models.CharField(max_length=50, unique=True)
     slug = models.SlugField(unique=True)
@@ -99,15 +110,19 @@ class RIR(models.Model):
 @python_2_unicode_compatible
 class Aggregate(CreatedUpdatedModel, CustomFieldModel):
     """
-    An aggregate exists at the root level of the IP address space hierarchy in NetBox. Aggregates are used to organize
-    the hierarchy and track the overall utilization of available address space. Each Aggregate is assigned to a RIR.
+    An aggregate exists at the root level of the IP address space
+    hierarchy in NetBox. Aggregates are used to organize the hierarchy
+    and track the overall utilization of available address space. Each
+    Aggregate is assigned to a RIR.
     """
     family = models.PositiveSmallIntegerField(choices=AF_CHOICES)
     prefix = IPNetworkField()
-    rir = models.ForeignKey('RIR', related_name='aggregates', on_delete=models.PROTECT, verbose_name='RIR')
+    rir = models.ForeignKey('RIR', related_name='aggregates',
+                            on_delete=models.PROTECT, verbose_name='RIR')
     date_added = models.DateField(blank=True, null=True)
     description = models.CharField(max_length=100, blank=True)
-    custom_field_values = GenericRelation(CustomFieldValue, content_type_field='obj_type', object_id_field='obj_id')
+    custom_field_values = GenericRelation(
+        CustomFieldValue, content_type_field='obj_type', object_id_field='obj_id')
 
     csv_headers = ['prefix', 'rir', 'date_added', 'description']
 
@@ -128,7 +143,8 @@ class Aggregate(CreatedUpdatedModel, CustomFieldModel):
             self.prefix = self.prefix.cidr
 
             # Ensure that the aggregate being added is not covered by an existing aggregate
-            covering_aggregates = Aggregate.objects.filter(prefix__net_contains_or_equals=str(self.prefix))
+            covering_aggregates = Aggregate.objects.filter(
+                prefix__net_contains_or_equals=str(self.prefix))
             if self.pk:
                 covering_aggregates = covering_aggregates.exclude(pk=self.pk)
             if covering_aggregates:
@@ -139,7 +155,8 @@ class Aggregate(CreatedUpdatedModel, CustomFieldModel):
                 })
 
             # Ensure that the aggregate being added does not cover an existing aggregate
-            covered_aggregates = Aggregate.objects.filter(prefix__net_contained=str(self.prefix))
+            covered_aggregates = Aggregate.objects.filter(
+                prefix__net_contained=str(self.prefix))
             if self.pk:
                 covered_aggregates = covered_aggregates.exclude(pk=self.pk)
             if covered_aggregates:
@@ -153,7 +170,7 @@ class Aggregate(CreatedUpdatedModel, CustomFieldModel):
         if self.prefix:
             # Infer address family from IPNetwork object
             self.family = self.prefix.version
-        super(Aggregate, self).save(*args, **kwargs)
+            super(Aggregate, self).save(*args, **kwargs)
 
     def to_csv(self):
         return (
@@ -167,7 +184,8 @@ class Aggregate(CreatedUpdatedModel, CustomFieldModel):
         """
         Determine the prefix utilization of the aggregate and return it as a percentage.
         """
-        queryset = Prefix.objects.filter(prefix__net_contained_or_equal=str(self.prefix))
+        queryset = Prefix.objects.filter(
+            prefix__net_contained_or_equal=str(self.prefix))
         child_prefixes = netaddr.IPSet([p.prefix for p in queryset])
         return int(float(child_prefixes.size) / self.prefix.size * 100)
 
@@ -175,8 +193,8 @@ class Aggregate(CreatedUpdatedModel, CustomFieldModel):
 @python_2_unicode_compatible
 class Role(models.Model):
     """
-    A Role represents the functional role of a Prefix or VLAN; for example, "Customer," "Infrastructure," or
-    "Management."
+    A Role represents the functional role of a Prefix or VLAN; for
+    example, "Customer," "Infrastructure," or "Management."
     """
     name = models.CharField(max_length=50, unique=True)
     slug = models.SlugField(unique=True)
@@ -201,31 +219,56 @@ class Role(models.Model):
 @python_2_unicode_compatible
 class Prefix(CreatedUpdatedModel, CustomFieldModel):
     """
-    A Prefix represents an IPv4 or IPv6 network, including mask length. Prefixes can optionally be assigned to Sites and
-    VRFs. A Prefix must be assigned a status and may optionally be assigned a used-define Role. A Prefix can also be
-    assigned to a VLAN where appropriate.
+    A Prefix represents an IPv4 or IPv6 network, including mask
+    length. Prefixes can optionally be assigned to Sites and VRFs. A
+    Prefix must be assigned a status and may optionally be assigned a
+    used-define Role. A Prefix can also be assigned to a VLAN where
+    appropriate.
     """
-    family = models.PositiveSmallIntegerField(choices=AF_CHOICES, editable=False)
+    family = models.PositiveSmallIntegerField(
+        choices=AF_CHOICES, editable=False)
     prefix = IPNetworkField(help_text="IPv4 or IPv6 network with mask")
-    site = models.ForeignKey('dcim.Site', related_name='prefixes', on_delete=models.PROTECT, blank=True, null=True)
-    vrf = models.ForeignKey('VRF', related_name='prefixes', on_delete=models.PROTECT, blank=True, null=True,
+    site = models.ForeignKey('dcim.Site',
+                             related_name='prefixes',
+                             on_delete=models.PROTECT,
+                             blank=True, null=True)
+    vrf = models.ForeignKey('VRF', related_name='prefixes',
+                            on_delete=models.PROTECT,
+                            blank=True, null=True,
                             verbose_name='VRF')
-    tenant = models.ForeignKey(Tenant, related_name='prefixes', blank=True, null=True, on_delete=models.PROTECT)
-    vlan = models.ForeignKey('VLAN', related_name='prefixes', on_delete=models.PROTECT, blank=True, null=True,
-                             verbose_name='VLAN')
-    status = models.PositiveSmallIntegerField('Status', choices=PREFIX_STATUS_CHOICES, default=PREFIX_STATUS_ACTIVE,
-                                              help_text="Operational status of this prefix")
-    role = models.ForeignKey('Role', related_name='prefixes', on_delete=models.SET_NULL, blank=True, null=True,
+    tenant = models.ForeignKey(
+        Tenant,
+        related_name='prefixes',
+        blank=True, null=True,
+        on_delete=models.PROTECT)
+    vlan = models.ForeignKey(
+        'VLAN', related_name='prefixes',
+        on_delete=models.PROTECT,
+        blank=True, null=True,
+        verbose_name='VLAN')
+    status = models.PositiveSmallIntegerField(
+        'Status',
+        choices=PREFIX_STATUS_CHOICES,
+        default=PREFIX_STATUS_ACTIVE,
+        help_text="Operational status of this prefix")
+    role = models.ForeignKey('Role',
+                             related_name='prefixes',
+                             on_delete=models.SET_NULL,
+                             blank=True, null=True,
                              help_text="The primary function of this prefix")
     is_pool = models.BooleanField(verbose_name='Is a pool', default=False,
                                   help_text="All IP addresses within this prefix are considered usable")
     description = models.CharField(max_length=100, blank=True)
-    custom_field_values = GenericRelation(CustomFieldValue, content_type_field='obj_type', object_id_field='obj_id')
+    custom_field_values = GenericRelation(
+        CustomFieldValue,
+        content_type_field='obj_type',
+        object_id_field='obj_id')
 
     objects = PrefixQuerySet.as_manager()
 
     csv_headers = [
-        'prefix', 'vrf', 'tenant', 'site', 'vlan_group', 'vlan_vid', 'status', 'role', 'is_pool', 'description',
+        'prefix', 'vrf', 'tenant', 'site', 'vlan_group', 'vlan_vid',
+        'status', 'role', 'is_pool', 'description',
     ]
 
     class Meta:
@@ -258,7 +301,8 @@ class Prefix(CreatedUpdatedModel, CustomFieldModel):
                 if duplicate_prefixes:
                     raise ValidationError({
                         'prefix': "Duplicate prefix found in {}: {}".format(
-                            "VRF {}".format(self.vrf) if self.vrf else "global table",
+                            "VRF {}".format(
+                                self.vrf) if self.vrf else "global table",
                             duplicate_prefixes.first(),
                         )
                     })
@@ -269,7 +313,7 @@ class Prefix(CreatedUpdatedModel, CustomFieldModel):
             self.prefix = self.prefix.cidr
             # Infer address family from IPNetwork object
             self.family = self.prefix.version
-        super(Prefix, self).save(*args, **kwargs)
+            super(Prefix, self).save(*args, **kwargs)
 
     def to_csv(self):
         return (
@@ -303,8 +347,9 @@ class Prefix(CreatedUpdatedModel, CustomFieldModel):
 
     def get_child_ips(self):
         """
-        Return all IPAddresses within this Prefix and VRF. If this Prefix is a container in the global table, return
-        child IPAddresses belonging to any VRF.
+        Return all IPAddresses within this Prefix and VRF. If this
+        Prefix is a container in the global table, return child
+        IPAddresses belonging to any VRF.
         """
         if self.vrf is None and self.status == PREFIX_STATUS_CONTAINER:
             return IPAddress.objects.filter(address__net_host_contained=str(self.prefix))
@@ -316,7 +361,8 @@ class Prefix(CreatedUpdatedModel, CustomFieldModel):
         Return all available Prefixes within this prefix as an IPSet.
         """
         prefix = netaddr.IPSet(self.prefix)
-        child_prefixes = netaddr.IPSet([child.prefix for child in self.get_child_prefixes()])
+        child_prefixes = netaddr.IPSet(
+            [child.prefix for child in self.get_child_prefixes()])
         available_prefixes = prefix - child_prefixes
 
         return available_prefixes
@@ -326,7 +372,8 @@ class Prefix(CreatedUpdatedModel, CustomFieldModel):
         Return all available IPs within this prefix as an IPSet.
         """
         prefix = netaddr.IPSet(self.prefix)
-        child_ips = netaddr.IPSet([ip.address.ip for ip in self.get_child_ips()])
+        child_ips = netaddr.IPSet(
+            [ip.address.ip for ip in self.get_child_ips()])
         available_ips = prefix - child_ips
 
         # Remove unusable IPs from non-pool prefixes
@@ -358,16 +405,20 @@ class Prefix(CreatedUpdatedModel, CustomFieldModel):
 
     def get_utilization(self):
         """
-        Determine the utilization of the prefix and return it as a percentage. For Prefixes with a status of
-        "container", calculate utilization based on child prefixes. For all others, count child IP addresses.
+        Determine the utilization of the prefix and return it as a
+        percentage. For Prefixes with a status of "container",
+        calculate utilization based on child prefixes. For all others,
+        count child IP addresses.
         """
         if self.status == PREFIX_STATUS_CONTAINER:
-            queryset = Prefix.objects.filter(prefix__net_contained=str(self.prefix), vrf=self.vrf)
+            queryset = Prefix.objects.filter(
+                prefix__net_contained=str(self.prefix), vrf=self.vrf)
             child_prefixes = netaddr.IPSet([p.prefix for p in queryset])
             return int(float(child_prefixes.size) / self.prefix.size * 100)
         else:
             # Compile an IPSet to avoid counting duplicate IPs
-            child_count = netaddr.IPSet([ip.address.ip for ip in self.get_child_ips()]).size
+            child_count = netaddr.IPSet(
+                [ip.address.ip for ip in self.get_child_ips()]).size
             prefix_size = self.prefix.size
             if self.family == 4 and self.prefix.prefixlen < 31 and not self.is_pool:
                 prefix_size -= 2
@@ -378,11 +429,14 @@ class IPAddressManager(models.Manager):
 
     def get_queryset(self):
         """
-        By default, PostgreSQL will order INETs with shorter (larger) prefix lengths ahead of those with longer
-        (smaller) masks. This makes no sense when ordering IPs, which should be ordered solely by family and host
-        address. We can use HOST() to extract just the host portion of the address (ignoring its mask), but we must
-        then re-cast this value to INET() so that records will be ordered properly. We are essentially re-casting each
-        IP address as a /32 or /128.
+        By default, PostgreSQL will order INETs with shorter (larger)
+        prefix lengths ahead of those with longer (smaller)
+        masks. This makes no sense when ordering IPs, which should be
+        ordered solely by family and host address. We can use HOST()
+        to extract just the host portion of the address (ignoring its
+        mask), but we must then re-cast this value to INET() so that
+        records will be ordered properly. We are essentially
+        re-casting each IP address as a /32 or /128.
         """
         qs = super(IPAddressManager, self).get_queryset()
         return qs.annotate(host=RawSQL('INET(HOST(ipam_ipaddress.address))', [])).order_by('family', 'host')
@@ -391,39 +445,71 @@ class IPAddressManager(models.Manager):
 @python_2_unicode_compatible
 class IPAddress(CreatedUpdatedModel, CustomFieldModel):
     """
-    An IPAddress represents an individual IPv4 or IPv6 address and its mask. The mask length should match what is
-    configured in the real world. (Typically, only loopback interfaces are configured with /32 or /128 masks.) Like
-    Prefixes, IPAddresses can optionally be assigned to a VRF. An IPAddress can optionally be assigned to an Interface.
-    Interfaces can have zero or more IPAddresses assigned to them.
+    An IPAddress represents an individual IPv4 or IPv6 address and its
+    mask. The mask length should match what is configured in the real
+    world. (Typically, only loopback interfaces are configured with
+    /32 or /128 masks.) Like Prefixes, IPAddresses can optionally be
+    assigned to a VRF. An IPAddress can optionally be assigned to an
+    Interface.  Interfaces can have zero or more IPAddresses assigned
+    to them.
 
-    An IPAddress can also optionally point to a NAT inside IP, designating itself as a NAT outside IP. This is useful,
-    for example, when mapping public addresses to private addresses. When an Interface has been assigned an IPAddress
-    which has a NAT outside IP, that Interface's Device can use either the inside or outside IP as its primary IP.
+    An IPAddress can also optionally point to a NAT inside IP,
+    designating itself as a NAT outside IP. This is useful, for
+    example, when mapping public addresses to private addresses. When
+    an Interface has been assigned an IPAddress which has a NAT
+    outside IP, that Interface's Device can use either the inside or
+    outside IP as its primary IP.
     """
-    family = models.PositiveSmallIntegerField(choices=AF_CHOICES, editable=False)
-    address = IPAddressField(help_text="IPv4 or IPv6 address (with mask)")
-    vrf = models.ForeignKey('VRF', related_name='ip_addresses', on_delete=models.PROTECT, blank=True, null=True,
-                            verbose_name='VRF')
-    tenant = models.ForeignKey(Tenant, related_name='ip_addresses', blank=True, null=True, on_delete=models.PROTECT)
+    objects = IPAddressManager()
+
+    vrf = models.ForeignKey(
+        'VRF',
+        related_name='ip_addresses',
+        on_delete=models.PROTECT,
+        blank=True, null=True,
+        verbose_name='VRF')
+    tenant = models.ForeignKey(
+        "tenancy.Tenant",
+        related_name='ip_addresses',
+        blank=True, null=True,
+        on_delete=models.PROTECT)
+    interface = models.ForeignKey(
+        "dcim.Interface",
+        related_name='ip_addresses',
+        on_delete=models.SET_NULL,
+        blank=True, null=True)
+    nat_inside = models.OneToOneField(
+        'self',
+        related_name='nat_outside',
+        on_delete=models.SET_NULL,
+        blank=True, null=True,
+        verbose_name='NAT (Inside)',
+        help_text="The IP for which this address is the \"outside\" IP")
+
+    family = models.PositiveSmallIntegerField(
+        choices=AF_CHOICES,
+        editable=False)
+    address = IPAddressField(
+        help_text="IPv4 or IPv6 address (with mask)")
     status = models.PositiveSmallIntegerField(
-        'Status', choices=IPADDRESS_STATUS_CHOICES, default=IPADDRESS_STATUS_ACTIVE,
+        'Status',
+        choices=IPADDRESS_STATUS_CHOICES,
+        default=IPADDRESS_STATUS_ACTIVE,
         help_text='The operational status of this IP'
     )
     role = models.PositiveSmallIntegerField(
-        'Role', choices=IPADDRESS_ROLE_CHOICES, blank=True, null=True, help_text='The functional role of this IP'
+        'Role',
+        choices=IPADDRESS_ROLE_CHOICES,
+        blank=True, null=True,
+        help_text='The functional role of this IP'
     )
-    interface = models.ForeignKey(Interface, related_name='ip_addresses', on_delete=models.CASCADE, blank=True,
-                                  null=True)
-    nat_inside = models.OneToOneField('self', related_name='nat_outside', on_delete=models.SET_NULL, blank=True,
-                                      null=True, verbose_name='NAT (Inside)',
-                                      help_text="The IP for which this address is the \"outside\" IP")
     description = models.CharField(max_length=100, blank=True)
-    custom_field_values = GenericRelation(CustomFieldValue, content_type_field='obj_type', object_id_field='obj_id')
-
-    objects = IPAddressManager()
+    custom_field_values = GenericRelation(
+        CustomFieldValue, content_type_field='obj_type', object_id_field='obj_id')
 
     csv_headers = [
-        'address', 'vrf', 'tenant', 'status', 'role', 'device', 'virtual_machine', 'interface_name', 'is_primary',
+        'address', 'vrf', 'tenant', 'status', 'role', 'device',
+        'virtual_machine', 'interface_name', 'is_primary',
         'description',
     ]
 
@@ -451,7 +537,8 @@ class IPAddress(CreatedUpdatedModel, CustomFieldModel):
                 if duplicate_ips:
                     raise ValidationError({
                         'address': "Duplicate IP address found in {}: {}".format(
-                            "VRF {}".format(self.vrf) if self.vrf else "global table",
+                            "VRF {}".format(
+                                self.vrf) if self.vrf else "global table",
                             duplicate_ips.first(),
                         )
                     })
@@ -460,7 +547,7 @@ class IPAddress(CreatedUpdatedModel, CustomFieldModel):
         if self.address:
             # Infer address family from IPAddress object
             self.family = self.address.version
-        super(IPAddress, self).save(*args, **kwargs)
+            super(IPAddress, self).save(*args, **kwargs)
 
     def to_csv(self):
 
@@ -507,11 +594,13 @@ class IPAddress(CreatedUpdatedModel, CustomFieldModel):
 @python_2_unicode_compatible
 class VLANGroup(models.Model):
     """
-    A VLAN group is an arbitrary collection of VLANs within which VLAN IDs and names must be unique.
+    A VLAN group is an arbitrary collection of VLANs within which VLAN
+    IDs and names must be unique.
     """
     name = models.CharField(max_length=50)
     slug = models.SlugField()
-    site = models.ForeignKey('dcim.Site', related_name='vlan_groups', on_delete=models.PROTECT, blank=True, null=True)
+    site = models.ForeignKey('dcim.Site', related_name='vlan_groups',
+                             on_delete=models.PROTECT, blank=True, null=True)
 
     csv_headers = ['name', 'slug', 'site']
 
@@ -541,7 +630,8 @@ class VLANGroup(models.Model):
         """
         Return the first available VLAN ID (1-4094) in the group.
         """
-        vids = [vlan['vid'] for vlan in self.vlans.order_by('vid').values('vid')]
+        vids = [vlan['vid']
+                for vlan in self.vlans.order_by('vid').values('vid')]
         for i in range(1, 4095):
             if i not in vids:
                 return i
@@ -551,27 +641,49 @@ class VLANGroup(models.Model):
 @python_2_unicode_compatible
 class VLAN(CreatedUpdatedModel, CustomFieldModel):
     """
-    A VLAN is a distinct layer two forwarding domain identified by a 12-bit integer (1-4094). Each VLAN must be assigned
-    to a Site, however VLAN IDs need not be unique within a Site. A VLAN may optionally be assigned to a VLANGroup,
-    within which all VLAN IDs and names but be unique.
+    A VLAN is a distinct layer two forwarding domain identified by a
+    12-bit integer (1-4094). Each VLAN must be assigned to a Site,
+    however VLAN IDs need not be unique within a Site. A VLAN may
+    optionally be assigned to a VLANGroup, within which all VLAN IDs
+    and names but be unique.
 
-    Like Prefixes, each VLAN is assigned an operational status and optionally a user-defined Role. A VLAN can have zero
-    or more Prefixes assigned to it.
+    Like Prefixes, each VLAN is assigned an operational status and
+    optionally a user-defined Role. A VLAN can have zero or more
+    Prefixes assigned to it.
     """
-    site = models.ForeignKey('dcim.Site', related_name='vlans', on_delete=models.PROTECT, blank=True, null=True)
-    group = models.ForeignKey('VLANGroup', related_name='vlans', blank=True, null=True, on_delete=models.PROTECT)
-    vid = models.PositiveSmallIntegerField(verbose_name='ID', validators=[
-        MinValueValidator(1),
-        MaxValueValidator(4094)
-    ])
-    name = models.CharField(max_length=64)
-    tenant = models.ForeignKey(Tenant, related_name='vlans', blank=True, null=True, on_delete=models.PROTECT)
-    status = models.PositiveSmallIntegerField('Status', choices=VLAN_STATUS_CHOICES, default=1)
-    role = models.ForeignKey('Role', related_name='vlans', on_delete=models.SET_NULL, blank=True, null=True)
-    description = models.CharField(max_length=100, blank=True)
-    custom_field_values = GenericRelation(CustomFieldValue, content_type_field='obj_type', object_id_field='obj_id')
+    site = models.ForeignKey(
+        'dcim.Site', related_name='vlans',
+        on_delete=models.PROTECT,
+        blank=True, null=True)
+    group = models.ForeignKey(
+        'VLANGroup', related_name='vlans',
+        blank=True, null=True,
+        on_delete=models.PROTECT)
+    role = models.ForeignKey(
+        'Role', related_name='vlans',
+        on_delete=models.SET_NULL,
+        blank=True, null=True)
 
-    csv_headers = ['site', 'group_name', 'vid', 'name', 'tenant', 'status', 'role', 'description']
+    vid = models.PositiveSmallIntegerField(
+        verbose_name='ID',
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(4094)
+        ])
+    tenant = models.ForeignKey(
+        Tenant, related_name='vlans',
+        blank=True, null=True,
+        on_delete=models.PROTECT)
+
+    name = models.CharField(max_length=64)
+    status = models.PositiveSmallIntegerField(
+        'Status', choices=VLAN_STATUS_CHOICES, default=1)
+    description = models.CharField(max_length=100, blank=True)
+    custom_field_values = GenericRelation(
+        CustomFieldValue, content_type_field='obj_type', object_id_field='obj_id')
+
+    csv_headers = ['site', 'group_name', 'vid', 'name',
+                   'tenant', 'status', 'role', 'description']
 
     class Meta:
         ordering = ['site', 'group', 'vid']
@@ -584,6 +696,7 @@ class VLAN(CreatedUpdatedModel, CustomFieldModel):
 
     def __str__(self):
         return self.display_name or super(VLAN, self).__str__()
+        # return self.display_name
 
     def get_absolute_url(self):
         return reverse('ipam:vlan', args=[self.pk])
@@ -612,12 +725,23 @@ class VLAN(CreatedUpdatedModel, CustomFieldModel):
     def display_name(self):
         if self.vid and self.name:
             return "{} ({})".format(self.vid, self.name)
+        elif self.vid:
+            return str(self.vid)
         return None
 
     def get_status_class(self):
         return STATUS_CHOICE_CLASSES[self.status]
 
+    @property
+    def member_count(self):
+        return len(self.members)
+
+    @property
+    def members(self):
+        return self.get_members()
+
     def get_members(self):
+        from dcim.models import Interface
         # Return all interfaces assigned to this VLAN
         return Interface.objects.filter(
             Q(untagged_vlan_id=self.pk) |
@@ -628,8 +752,9 @@ class VLAN(CreatedUpdatedModel, CustomFieldModel):
 @python_2_unicode_compatible
 class Service(CreatedUpdatedModel):
     """
-    A Service represents a layer-four service (e.g. HTTP or SSH) running on a Device or VirtualMachine. A Service may
-    optionally be tied to one or more specific IPAddresses belonging to its parent.
+    A Service represents a layer-four service (e.g. HTTP or SSH)
+    running on a Device or VirtualMachine. A Service may optionally be
+    tied to one or more specific IPAddresses belonging to its parent.
     """
     device = models.ForeignKey(
         to='dcim.Device',
@@ -681,6 +806,8 @@ class Service(CreatedUpdatedModel):
 
         # A Service must belong to a Device *or* to a VirtualMachine
         if self.device and self.virtual_machine:
-            raise ValidationError("A service cannot be associated with both a device and a virtual machine.")
+            raise ValidationError(
+                "A service cannot be associated with both a device and a virtual machine.")
         if not self.device and not self.virtual_machine:
-            raise ValidationError("A service must be associated with either a device or a virtual machine.")
+            raise ValidationError(
+                "A service must be associated with either a device or a virtual machine.")

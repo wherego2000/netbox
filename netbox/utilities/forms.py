@@ -1,8 +1,8 @@
 from __future__ import unicode_literals
 
 import csv
-from io import StringIO
 import re
+from io import StringIO
 
 from django import forms
 from django.conf import settings
@@ -38,10 +38,10 @@ COLOR_CHOICES = (
     ('607d8b', 'Dark grey'),
     ('111111', 'Black'),
 )
-NUMERIC_EXPANSION_PATTERN = r'\[((?:\d+[?:,-])+\d+)\]'
-ALPHANUMERIC_EXPANSION_PATTERN = r'\[((?:[a-zA-Z0-9]+[?:,-])+[a-zA-Z0-9]+)\]'
-IP4_EXPANSION_PATTERN = r'\[((?:[0-9]{1,3}[?:,-])+[0-9]{1,3})\]'
-IP6_EXPANSION_PATTERN = r'\[((?:[0-9a-f]{1,4}[?:,-])+[0-9a-f]{1,4})\]'
+NUMERIC_EXPANSION_PATTERN = '\[((?:\d+[?:,-])+\d+)\]'
+ALPHANUMERIC_EXPANSION_PATTERN = '\[((?:[a-zA-Z0-9]+[?:,-])+[a-zA-Z0-9]+)\]'
+IP4_EXPANSION_PATTERN = '\[((?:[0-9]{1,3}[?:,-])+[0-9]{1,3})\]'
+IP6_EXPANSION_PATTERN = '\[((?:[0-9a-f]{1,4}[?:,-])+[0-9a-f]{1,4})\]'
 
 
 def parse_numeric_range(string, base=10):
@@ -57,7 +57,8 @@ def parse_numeric_range(string, base=10):
             begin, end = dash_range.split('-')
         except ValueError:
             begin, end = dash_range, dash_range
-        begin, end = int(begin.strip(), base=base), int(end.strip(), base=base) + 1
+        begin, end = int(begin.strip(), base=base), int(
+            end.strip(), base=base) + 1
         values.extend(range(begin, end))
     return list(set(values))
 
@@ -68,7 +69,8 @@ def expand_numeric_pattern(string):
       'ge-0/0/[0-3,5]' => ['ge-0/0/0', 'ge-0/0/1', 'ge-0/0/2', 'ge-0/0/3', 'ge-0/0/5']
       'xe-0/[0,2-3]/[0-7]' => ['xe-0/0/0', 'xe-0/0/1', 'xe-0/0/2', ... 'xe-0/3/5', 'xe-0/3/6', 'xe-0/3/7']
     """
-    lead, pattern, remnant = re.split(NUMERIC_EXPANSION_PATTERN, string, maxsplit=1)
+    lead, pattern, remnant = re.split(
+        NUMERIC_EXPANSION_PATTERN, string, maxsplit=1)
     parsed_range = parse_numeric_range(pattern)
     for i in parsed_range:
         if re.search(NUMERIC_EXPANSION_PATTERN, remnant):
@@ -107,7 +109,8 @@ def expand_alphanumeric_pattern(string):
     """
     Expand an alphabetic pattern into a list of strings.
     """
-    lead, pattern, remnant = re.split(ALPHANUMERIC_EXPANSION_PATTERN, string, maxsplit=1)
+    lead, pattern, remnant = re.split(
+        ALPHANUMERIC_EXPANSION_PATTERN, string, maxsplit=1)
     parsed_range = parse_alphanumeric_range(pattern)
     for i in parsed_range:
         if re.search(ALPHANUMERIC_EXPANSION_PATTERN, remnant):
@@ -199,6 +202,7 @@ class ArrayFieldSelectMultiple(SelectWithDisabled, forms.SelectMultiple):
     """
     MultiSelect widget for a SimpleArrayField. Choices must be populated on the widget.
     """
+
     def __init__(self, *args, **kwargs):
         self.delimiter = kwargs.pop('delimiter', ',')
         super(ArrayFieldSelectMultiple, self).__init__(*args, **kwargs)
@@ -211,7 +215,8 @@ class ArrayFieldSelectMultiple(SelectWithDisabled, forms.SelectMultiple):
 
     def value_from_datadict(self, data, files, name):
         # Condense the list of selected choices into a delimited string
-        data = super(ArrayFieldSelectMultiple, self).value_from_datadict(data, files, name)
+        data = super(ArrayFieldSelectMultiple,
+                     self).value_from_datadict(data, files, name)
         return self.delimiter.join(data)
 
 
@@ -229,7 +234,9 @@ class APISelect(SelectWithDisabled):
         super(APISelect, self).__init__(*args, **kwargs)
 
         self.attrs['class'] = 'api-select'
-        self.attrs['api-url'] = '/{}{}'.format(settings.BASE_PATH, api_url.lstrip('/'))  # Inject BASE_PATH
+        # Inject BASE_PATH
+        self.attrs['api-url'] = '/{}{}'.format(
+            settings.BASE_PATH, api_url.lstrip('/'))
         if display_field:
             self.attrs['display-field'] = display_field
         if disabled_indicator:
@@ -241,13 +248,14 @@ class APISelectMultiple(APISelect):
 
 
 class Livesearch(forms.TextInput):
-    """
-    A text widget that carries a few extra bits of data for use in AJAX-powered autocomplete search
+    """A text widget that carries a few extra bits of data for use in
+    AJAX-powered autocomplete search
 
     :param query_key: The name of the parameter to query against
     :param query_url: The name of the API URL to query
     :param field_to_update: The name of the "real" form field whose value is being set
     :param obj_label: The field to use as the option label (optional)
+
     """
 
     def __init__(self, query_key, query_url, field_to_update, obj_label=None, *args, **kwargs):
@@ -301,17 +309,20 @@ class CSVDataField(forms.CharField):
         headers = next(reader)
         for f in self.required_fields:
             if f not in headers:
-                raise forms.ValidationError('Required column header "{}" not found.'.format(f))
+                raise forms.ValidationError(
+                    'Required column header "{}" not found.'.format(f))
         for f in headers:
             if f not in self.fields:
-                raise forms.ValidationError('Unexpected column header "{}" found.'.format(f))
+                raise forms.ValidationError(
+                    'Unexpected column header "{}" found.'.format(f))
 
         # Parse CSV data
         for i, row in enumerate(reader, start=1):
             if row:
                 if len(row) != len(headers):
                     raise forms.ValidationError(
-                        "Row {}: Expected {} columns but found {}".format(i, len(headers), len(row))
+                        "Row {}: Expected {} columns but found {}".format(
+                            i, len(headers), len(row))
                     )
                 row = [col.strip() for col in row]
                 record = dict(zip(headers, row))
@@ -344,6 +355,7 @@ class ExpandableNameField(forms.CharField):
     A field which allows for numeric range expansion
       Example: 'Gi0/[1-3]' => ['Gi0/1', 'Gi0/2', 'Gi0/3']
     """
+
     def __init__(self, *args, **kwargs):
         super(ExpandableNameField, self).__init__(*args, **kwargs)
         if not self.help_text:
@@ -364,6 +376,7 @@ class ExpandableIPAddressField(forms.CharField):
     A field which allows for expansion of IP address ranges
       Example: '192.0.2.[1-254]/24' => ['192.0.2.1/24', '192.0.2.2/24', '192.0.2.3/24' ... '192.0.2.254/24']
     """
+
     def __init__(self, *args, **kwargs):
         super(ExpandableIPAddressField, self).__init__(*args, **kwargs)
         if not self.help_text:
@@ -394,27 +407,30 @@ class CommentField(forms.CharField):
         required = kwargs.pop('required', False)
         label = kwargs.pop('label', self.default_label)
         help_text = kwargs.pop('help_text', self.default_helptext)
-        super(CommentField, self).__init__(required=required, label=label, help_text=help_text, *args, **kwargs)
+        super(CommentField, self).__init__(required=required,
+                                           label=label, help_text=help_text, *args, **kwargs)
 
 
 class FlexibleModelChoiceField(forms.ModelChoiceField):
     """
     Allow a model to be reference by either '{ID}' or the field specified by `to_field_name`.
     """
+
     def to_python(self, value):
         if value in self.empty_values:
             return None
         try:
             if not self.to_field_name:
                 key = 'pk'
-            elif re.match(r'^\{\d+\}$', value):
+            elif re.match('^\{\d+\}$', value):
                 key = 'pk'
                 value = value.strip('{}')
             else:
                 key = self.to_field_name
             value = self.queryset.get(**{key: value})
         except (ValueError, TypeError, self.queryset.model.DoesNotExist):
-            raise forms.ValidationError(self.error_messages['invalid_choice'], code='invalid_choice')
+            raise forms.ValidationError(
+                self.error_messages['invalid_choice'], code='invalid_choice')
         return value
 
 
@@ -432,6 +448,7 @@ class ChainedModelChoiceField(forms.ModelChoiceField):
 
     where <value> is the value of the `country1` field. (Note: The form must inherit from ChainedFieldsMixin.)
     """
+
     def __init__(self, chains=None, *args, **kwargs):
         self.chains = chains
         super(ChainedModelChoiceField, self).__init__(*args, **kwargs)
@@ -441,6 +458,7 @@ class ChainedModelMultipleChoiceField(forms.ModelMultipleChoiceField):
     """
     See ChainedModelChoiceField
     """
+
     def __init__(self, chains=None, *args, **kwargs):
         self.chains = chains
         super(ChainedModelMultipleChoiceField, self).__init__(*args, **kwargs)
@@ -451,7 +469,8 @@ class SlugField(forms.SlugField):
     def __init__(self, slug_source='name', *args, **kwargs):
         label = kwargs.pop('label', "Slug")
         help_text = kwargs.pop('help_text', "URL-friendly unique shorthand")
-        super(SlugField, self).__init__(label=label, help_text=help_text, *args, **kwargs)
+        super(SlugField, self).__init__(label=label,
+                                        help_text=help_text, *args, **kwargs)
         self.widget.attrs['slug-source'] = slug_source
 
 
@@ -524,7 +543,8 @@ class AnnotatedMultipleChoiceField(forms.MultipleChoiceField):
         self.annotate_field = annotate_field
         self.static_choices = choices
 
-        super(AnnotatedMultipleChoiceField, self).__init__(choices=self.annotate_choices, *args, **kwargs)
+        super(AnnotatedMultipleChoiceField, self).__init__(
+            choices=self.annotate_choices, *args, **kwargs)
 
 
 class LaxURLField(forms.URLField):
@@ -545,12 +565,14 @@ class BootstrapMixin(forms.BaseForm):
     def __init__(self, *args, **kwargs):
         super(BootstrapMixin, self).__init__(*args, **kwargs)
 
-        exempt_widgets = [forms.CheckboxInput, forms.ClearableFileInput, forms.FileInput, forms.RadioSelect]
+        exempt_widgets = [forms.CheckboxInput,
+                          forms.ClearableFileInput, forms.FileInput, forms.RadioSelect]
 
         for field_name, field in self.fields.items():
             if field.widget.__class__ not in exempt_widgets:
                 css = field.widget.attrs.get('class', '')
-                field.widget.attrs['class'] = ' '.join([css, 'form-control']).strip()
+                field.widget.attrs['class'] = ' '.join(
+                    [css, 'form-control']).strip()
             if field.required and not isinstance(field.widget, forms.FileInput):
                 field.widget.attrs['required'] = 'required'
             if 'placeholder' not in field.widget.attrs:
@@ -561,6 +583,7 @@ class ChainedFieldsMixin(forms.BaseForm):
     """
     Iterate through all ChainedModelChoiceFields in the form and modify their querysets based on chained fields.
     """
+
     def __init__(self, *args, **kwargs):
         super(ChainedFieldsMixin, self).__init__(*args, **kwargs)
 
@@ -602,13 +625,15 @@ class ConfirmationForm(BootstrapMixin, ReturnURLForm):
     """
     A generic confirmation form. The form is not valid unless the confirm field is checked.
     """
-    confirm = forms.BooleanField(required=True, widget=forms.HiddenInput(), initial=True)
+    confirm = forms.BooleanField(
+        required=True, widget=forms.HiddenInput(), initial=True)
 
 
 class ComponentForm(BootstrapMixin, forms.Form):
     """
     Allow inclusion of the parent Device/VirtualMachine as context for limiting field choices.
     """
+
     def __init__(self, parent, *args, **kwargs):
         self.parent = parent
         super(ComponentForm, self).__init__(*args, **kwargs)
@@ -623,6 +648,7 @@ class BulkEditForm(forms.Form):
 
         # Copy any nullable fields defined in Meta
         if hasattr(self.Meta, 'nullable_fields'):
-            self.nullable_fields = [field for field in self.Meta.nullable_fields]
+            self.nullable_fields = [
+                field for field in self.Meta.nullable_fields]
         else:
             self.nullable_fields = []

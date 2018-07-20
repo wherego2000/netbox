@@ -48,12 +48,15 @@ GRAPH_TYPE_CHOICES = (
 
 # Models which support export templates
 EXPORTTEMPLATE_MODELS = [
-    'provider', 'circuit',                                                          # Circuits
+    # Circuits
+    'provider', 'circuit',
     'site', 'region', 'rack', 'rackgroup', 'manufacturer', 'devicetype', 'device',  # DCIM
     'consoleport', 'powerport', 'interfaceconnection',                              # DCIM
     'aggregate', 'prefix', 'ipaddress', 'vlan',                                     # IPAM
-    'tenant',                                                                       # Tenancy
-    'cluster', 'virtualmachine',                                                    # Virtualization
+    # Tenancy
+    'tenant',
+    # Virtualization
+    'cluster', 'virtualmachine',
 ]
 
 # Topology map types

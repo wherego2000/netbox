@@ -15,6 +15,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='token',
             name='write_enabled',
-            field=models.BooleanField(default=True, help_text='Permit create/update/delete operations using this key'),
+            field=models.BooleanField(
+                default=True, help_text='Permit create/update/delete operations using this key'),
         ),
     ]

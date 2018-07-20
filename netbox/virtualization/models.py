@@ -6,16 +6,19 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.urls import reverse
 from django.utils.encoding import python_2_unicode_compatible
+from extras.models import CustomFieldModel
+from extras.models import CustomFieldValue
 
-from dcim.models import Device
-from extras.models import CustomFieldModel, CustomFieldValue
 from utilities.models import CreatedUpdatedModel
-from .constants import DEVICE_STATUS_ACTIVE, VM_STATUS_CHOICES, VM_STATUS_CLASSES
 
+from .constants import DEVICE_STATUS_ACTIVE
+from .constants import VM_STATUS_CHOICES
+from .constants import VM_STATUS_CLASSES
 
 #
 # Cluster types
 #
+
 
 @python_2_unicode_compatible
 class ClusterType(models.Model):
@@ -139,7 +142,8 @@ class Cluster(CreatedUpdatedModel, CustomFieldModel):
 
         # If the Cluster is assigned to a Site, verify that all host Devices belong to that Site.
         if self.pk and self.site:
-            nonsite_devices = Device.objects.filter(cluster=self).exclude(site=self.site).count()
+            nonsite_devices = Device.objects.filter(
+                cluster=self).exclude(site=self.site).count()
             if nonsite_devices:
                 raise ValidationError({
                     'site': "{} devices are assigned as hosts for this cluster but are not in site {}".format(
@@ -185,15 +189,6 @@ class VirtualMachine(CreatedUpdatedModel, CustomFieldModel):
         blank=True,
         null=True
     )
-    name = models.CharField(
-        max_length=64,
-        unique=True
-    )
-    status = models.PositiveSmallIntegerField(
-        choices=VM_STATUS_CHOICES,
-        default=DEVICE_STATUS_ACTIVE,
-        verbose_name='Status'
-    )
     role = models.ForeignKey(
         to='dcim.DeviceRole',
         limit_choices_to={'vm_role': True},
@@ -217,6 +212,16 @@ class VirtualMachine(CreatedUpdatedModel, CustomFieldModel):
         blank=True,
         null=True,
         verbose_name='Primary IPv6'
+    )
+
+    name = models.CharField(
+        max_length=64,
+        unique=True
+    )
+    status = models.PositiveSmallIntegerField(
+        choices=VM_STATUS_CHOICES,
+        default=DEVICE_STATUS_ACTIVE,
+        verbose_name='Status'
     )
     vcpus = models.PositiveSmallIntegerField(
         blank=True,
@@ -243,7 +248,8 @@ class VirtualMachine(CreatedUpdatedModel, CustomFieldModel):
     )
 
     csv_headers = [
-        'name', 'status', 'role', 'cluster', 'tenant', 'platform', 'vcpus', 'memory', 'disk', 'comments',
+        'name', 'status', 'role', 'cluster', 'tenant', 'platform',
+        'vcpus', 'memory', 'disk', 'comments',
     ]
 
     class Meta:
@@ -286,3 +292,29 @@ class VirtualMachine(CreatedUpdatedModel, CustomFieldModel):
     @property
     def site(self):
         return self.cluster.site
+
+    @property
+    def management_interfaces(self):
+        """Look for:
+        1. interface.type == INTERFACE_TYPE_MANAGEMENT;
+        2. interface has ip assigned to it;
+        3. interface has a `secret` (username, pwd) linked to it.
+        """
+        return filter(lambda x: x.secrets and x.ip_addresses,
+                      self.interfaces.filter(type=INTERFACE_TYPE_MANAGEMENT))
+
+    @property
+    def management_access(self):
+        """Return (ip, user, pwd).
+
+        Essential information to access device management
+        interface to execute management task.
+        """
+        addr = self.primary_ip
+        management_secrets = self.secrets.filter(role__slug="management")
+        if not management_secrets:
+            return None
+        else:
+            ip = str(addr.address).split("/")[0]
+            secret = management_secrets[0]
+            return (ip, secret)

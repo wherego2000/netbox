@@ -1,10 +1,14 @@
 from __future__ import unicode_literals
 
-from django.contrib import admin, messages
-from django.shortcuts import redirect, render
+from secrets.forms import ActivateUserKeyForm
+from secrets.models import Secret
+from secrets.models import UserKey
 
-from .forms import ActivateUserKeyForm
-from .models import UserKey
+from django.apps import apps
+from django.contrib import admin
+from django.contrib import messages
+from django.shortcuts import redirect
+from django.shortcuts import render
 
 
 @admin.register(UserKey)
@@ -21,7 +25,8 @@ class UserKeyAdmin(admin.ModelAdmin):
         return self.readonly_fields
 
     def get_actions(self, request):
-        # Bulk deletion is disabled at the manager level, so remove the action from the admin site for this model.
+        # Bulk deletion is disabled at the manager level, so remove the action
+        # from the admin site for this model.
         actions = super(UserKeyAdmin, self).get_actions(request)
         if 'delete_selected' in actions:
             del actions['delete_selected']
@@ -42,7 +47,8 @@ class UserKeyAdmin(admin.ModelAdmin):
         if 'activate' in request.POST:
             form = ActivateUserKeyForm(request.POST)
             if form.is_valid():
-                master_key = my_userkey.get_master_key(form.cleaned_data['secret_key'])
+                master_key = my_userkey.get_master_key(
+                    form.cleaned_data['secret_key'])
                 if master_key is not None:
                     for uk in form.cleaned_data['_selected_action']:
                         uk.activate(master_key)
@@ -52,9 +58,26 @@ class UserKeyAdmin(admin.ModelAdmin):
                         request, "Invalid private key provided. Unable to retrieve master key.", extra_tags='error'
                     )
         else:
-            form = ActivateUserKeyForm(initial={'_selected_action': request.POST.getlist(admin.ACTION_CHECKBOX_NAME)})
+            form = ActivateUserKeyForm(
+                initial={'_selected_action': request.POST.getlist(admin.ACTION_CHECKBOX_NAME)})
 
         return render(request, 'activate_keys.html', {
             'form': form,
         })
     activate_selected.short_description = "Activate selected user keys"
+
+
+class SecretAdmin(admin.ModelAdmin):
+    list_display = ("device", "role", "name", "password", "interface")
+    list_filter = ("role",)
+
+
+admin.site.register(Secret, SecretAdmin)
+
+app = apps.get_app_config("secrets")
+for model_name, model in app.models.items():
+    try:
+        if model_name != "Userkey":
+            admin.site.register(model)
+    except admin.sites.AlreadyRegistered:
+        pass

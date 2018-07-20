@@ -17,16 +17,19 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='device',
             name='cluster',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='devices', to='virtualization.Cluster'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                    related_name='devices', to='virtualization.Cluster'),
         ),
         migrations.AddField(
             model_name='interface',
             name='virtual_machine',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='interfaces', to='virtualization.VirtualMachine'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE,
+                                    related_name='interfaces', to='virtualization.VirtualMachine'),
         ),
         migrations.AlterField(
             model_name='interface',
             name='device',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='interfaces', to='dcim.Device'),
+            field=models.ForeignKey(
+                blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='interfaces', to='dcim.Device'),
         ),
     ]

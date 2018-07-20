@@ -16,6 +16,7 @@ class LoginRequiredMiddleware(object):
     """
     If LOGIN_REQUIRED is True, redirect all non-authenticated users to the login page.
     """
+
     def __init__(self, get_response):
         self.get_response = get_response
 
@@ -33,6 +34,7 @@ class APIVersionMiddleware(object):
     """
     If the request is for an API endpoint, include the API version as a response header.
     """
+
     def __init__(self, get_response):
         self.get_response = get_response
 
@@ -49,6 +51,7 @@ class ExceptionHandlingMiddleware(object):
     Intercept certain exceptions which are likely indicative of installation issues and provide helpful instructions
     to the user.
     """
+
     def __init__(self, get_response):
         self.get_response = get_response
 

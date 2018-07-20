@@ -19,7 +19,8 @@ class TenantGroupSerializer(ValidatedModelSerializer):
 
 
 class NestedTenantGroupSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='tenancy-api:tenantgroup-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='tenancy-api:tenantgroup-detail')
 
     class Meta:
         model = TenantGroup
@@ -35,11 +36,13 @@ class TenantSerializer(CustomFieldModelSerializer):
 
     class Meta:
         model = Tenant
-        fields = ['id', 'name', 'slug', 'group', 'description', 'comments', 'custom_fields', 'created', 'last_updated']
+        fields = ['id', 'name', 'slug', 'group', 'description',
+                  'comments', 'custom_fields', 'created', 'last_updated']
 
 
 class NestedTenantSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='tenancy-api:tenant-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='tenancy-api:tenant-detail')
 
     class Meta:
         model = Tenant
@@ -50,4 +53,5 @@ class WritableTenantSerializer(CustomFieldModelSerializer):
 
     class Meta:
         model = Tenant
-        fields = ['id', 'name', 'slug', 'group', 'description', 'comments', 'custom_fields', 'created', 'last_updated']
+        fields = ['id', 'name', 'slug', 'group', 'description',
+                  'comments', 'custom_fields', 'created', 'last_updated']

@@ -18,13 +18,17 @@ class TenantGroupTest(HttpStatusMixin, APITestCase):
         token = Token.objects.create(user=user)
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
-        self.tenantgroup1 = TenantGroup.objects.create(name='Test Tenant Group 1', slug='test-tenant-group-1')
-        self.tenantgroup2 = TenantGroup.objects.create(name='Test Tenant Group 2', slug='test-tenant-group-2')
-        self.tenantgroup3 = TenantGroup.objects.create(name='Test Tenant Group 3', slug='test-tenant-group-3')
+        self.tenantgroup1 = TenantGroup.objects.create(
+            name='Test Tenant Group 1', slug='test-tenant-group-1')
+        self.tenantgroup2 = TenantGroup.objects.create(
+            name='Test Tenant Group 2', slug='test-tenant-group-2')
+        self.tenantgroup3 = TenantGroup.objects.create(
+            name='Test Tenant Group 3', slug='test-tenant-group-3')
 
     def test_get_tenantgroup(self):
 
-        url = reverse('tenancy-api:tenantgroup-detail', kwargs={'pk': self.tenantgroup1.pk})
+        url = reverse('tenancy-api:tenantgroup-detail',
+                      kwargs={'pk': self.tenantgroup1.pk})
         response = self.client.get(url, **self.header)
 
         self.assertEqual(response.data['name'], self.tenantgroup1.name)
@@ -85,7 +89,8 @@ class TenantGroupTest(HttpStatusMixin, APITestCase):
             'slug': 'test-tenant-group-x',
         }
 
-        url = reverse('tenancy-api:tenantgroup-detail', kwargs={'pk': self.tenantgroup1.pk})
+        url = reverse('tenancy-api:tenantgroup-detail',
+                      kwargs={'pk': self.tenantgroup1.pk})
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
@@ -96,7 +101,8 @@ class TenantGroupTest(HttpStatusMixin, APITestCase):
 
     def test_delete_tenantgroup(self):
 
-        url = reverse('tenancy-api:tenantgroup-detail', kwargs={'pk': self.tenantgroup1.pk})
+        url = reverse('tenancy-api:tenantgroup-detail',
+                      kwargs={'pk': self.tenantgroup1.pk})
         response = self.client.delete(url, **self.header)
 
         self.assertHttpStatus(response, status.HTTP_204_NO_CONTENT)
@@ -111,15 +117,21 @@ class TenantTest(HttpStatusMixin, APITestCase):
         token = Token.objects.create(user=user)
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
-        self.tenantgroup1 = TenantGroup.objects.create(name='Test Tenant Group 1', slug='test-tenant-group-1')
-        self.tenantgroup2 = TenantGroup.objects.create(name='Test Tenant Group 2', slug='test-tenant-group-2')
-        self.tenant1 = Tenant.objects.create(name='Test Tenant 1', slug='test-tenant-1', group=self.tenantgroup1)
-        self.tenant2 = Tenant.objects.create(name='Test Tenant 2', slug='test-tenant-2', group=self.tenantgroup1)
-        self.tenant3 = Tenant.objects.create(name='Test Tenant 3', slug='test-tenant-3', group=self.tenantgroup1)
+        self.tenantgroup1 = TenantGroup.objects.create(
+            name='Test Tenant Group 1', slug='test-tenant-group-1')
+        self.tenantgroup2 = TenantGroup.objects.create(
+            name='Test Tenant Group 2', slug='test-tenant-group-2')
+        self.tenant1 = Tenant.objects.create(
+            name='Test Tenant 1', slug='test-tenant-1', group=self.tenantgroup1)
+        self.tenant2 = Tenant.objects.create(
+            name='Test Tenant 2', slug='test-tenant-2', group=self.tenantgroup1)
+        self.tenant3 = Tenant.objects.create(
+            name='Test Tenant 3', slug='test-tenant-3', group=self.tenantgroup1)
 
     def test_get_tenant(self):
 
-        url = reverse('tenancy-api:tenant-detail', kwargs={'pk': self.tenant1.pk})
+        url = reverse('tenancy-api:tenant-detail',
+                      kwargs={'pk': self.tenant1.pk})
         response = self.client.get(url, **self.header)
 
         self.assertEqual(response.data['name'], self.tenant1.name)
@@ -183,7 +195,8 @@ class TenantTest(HttpStatusMixin, APITestCase):
             'group': self.tenantgroup2.pk,
         }
 
-        url = reverse('tenancy-api:tenant-detail', kwargs={'pk': self.tenant1.pk})
+        url = reverse('tenancy-api:tenant-detail',
+                      kwargs={'pk': self.tenant1.pk})
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
@@ -195,7 +208,8 @@ class TenantTest(HttpStatusMixin, APITestCase):
 
     def test_delete_tenant(self):
 
-        url = reverse('tenancy-api:tenant-detail', kwargs={'pk': self.tenant1.pk})
+        url = reverse('tenancy-api:tenant-detail',
+                      kwargs={'pk': self.tenant1.pk})
         response = self.client.delete(url, **self.header)
 
         self.assertHttpStatus(response, status.HTTP_204_NO_CONTENT)

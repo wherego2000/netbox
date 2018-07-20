@@ -15,6 +15,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='topologymap',
             name='type',
-            field=models.PositiveSmallIntegerField(choices=[(1, 'Network'), (2, 'Console'), (3, 'Power')], default=1),
+            field=models.PositiveSmallIntegerField(
+                choices=[(1, 'Network'), (2, 'Console'), (3, 'Power')], default=1),
         ),
     ]

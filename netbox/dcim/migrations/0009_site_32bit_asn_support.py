@@ -16,6 +16,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='site',
             name='asn',
-            field=dcim.fields.ASNField(blank=True, null=True, verbose_name=b'ASN'),
+            field=dcim.fields.ASNField(
+                blank=True, null=True, verbose_name=b'ASN'),
         ),
     ]

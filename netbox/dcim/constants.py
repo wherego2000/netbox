@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-
 # Rack types
 RACK_TYPE_2POST = 100
 RACK_TYPE_4POST = 200
@@ -209,6 +208,7 @@ DEVICE_STATUS_PLANNED = 2
 DEVICE_STATUS_STAGED = 3
 DEVICE_STATUS_FAILED = 4
 DEVICE_STATUS_INVENTORY = 5
+DEVICE_STATUS_POWERED_OFF = 6
 DEVICE_STATUS_CHOICES = [
     [DEVICE_STATUS_ACTIVE, 'Active'],
     [DEVICE_STATUS_OFFLINE, 'Offline'],
@@ -216,6 +216,7 @@ DEVICE_STATUS_CHOICES = [
     [DEVICE_STATUS_STAGED, 'Staged'],
     [DEVICE_STATUS_FAILED, 'Failed'],
     [DEVICE_STATUS_INVENTORY, 'Inventory'],
+    [DEVICE_STATUS_POWERED_OFF, "Powered off"]
 ]
 
 # Site statuses
@@ -255,3 +256,34 @@ RPC_CLIENT_CHOICES = [
     [RPC_CLIENT_CISCO_IOS, 'Cisco IOS (SSH)'],
     [RPC_CLIENT_OPENGEAR, 'Opengear (SSH)'],
 ]
+
+# Interface type
+INTERFACE_TYPE_MANAGEMENT = 1
+INTERFACE_TYPE_HOST_OS = 2
+INTERFACE_TYPE_SWITCH_PORT = 3
+INTERFACE_TYPE_VIRTUAL_BRIDGE = 4
+INTERFACE_TYPE_CHOICES = (
+    (INTERFACE_TYPE_MANAGEMENT, "Management"),
+    (INTERFACE_TYPE_HOST_OS, "Host OS"),
+    (INTERFACE_TYPE_SWITCH_PORT, "Switch port"),
+    (INTERFACE_TYPE_VIRTUAL_BRIDGE, "Virtual bridge")
+)
+
+# BMC power state option
+# ```
+# power on        [-options]   - power on server
+# power off       [-options]   - power off server
+# power cycle     [-options]   - power off, then on
+# power uefi                   - boot into UEFI's F1 setup
+# ```
+
+BMC_POWER_ON = 1
+BMC_POWER_OFF = 2
+BMC_POWER_CYCLE = 3  # off, then on
+BMC_POWER_ON_UEFI = 4
+BMC_POWER_CHOICES = (
+    (BMC_POWER_ON, "power on"),
+    (BMC_POWER_OFF, "power off"),
+    (BMC_POWER_CYCLE, "power cycle"),
+    (BMC_POWER_ON_UEFI, "power on uefi")
+)

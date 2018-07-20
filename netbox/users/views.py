@@ -99,7 +99,8 @@ class ChangePasswordView(View):
         if form.is_valid():
             form.save()
             update_session_auth_hash(request, form.user)
-            messages.success(request, "Your password has been changed successfully.")
+            messages.success(
+                request, "Your password has been changed successfully.")
             return redirect('user:profile')
 
         return render(request, self.template_name, {
@@ -231,7 +232,8 @@ class TokenEditView(LoginRequiredMixin, View):
     def get(self, request, pk=None):
 
         if pk is not None:
-            token = get_object_or_404(Token.objects.filter(user=request.user), pk=pk)
+            token = get_object_or_404(
+                Token.objects.filter(user=request.user), pk=pk)
         else:
             token = Token(user=request.user)
 
@@ -247,7 +249,8 @@ class TokenEditView(LoginRequiredMixin, View):
     def post(self, request, pk=None):
 
         if pk is not None:
-            token = get_object_or_404(Token.objects.filter(user=request.user), pk=pk)
+            token = get_object_or_404(
+                Token.objects.filter(user=request.user), pk=pk)
             form = TokenForm(request.POST, instance=token)
         else:
             token = Token()
@@ -258,7 +261,8 @@ class TokenEditView(LoginRequiredMixin, View):
             token.user = request.user
             token.save()
 
-            msg = "Modified token {}".format(token) if pk else "Created token {}".format(token)
+            msg = "Modified token {}".format(
+                token) if pk else "Created token {}".format(token)
             messages.success(request, msg)
 
             if '_addanother' in request.POST:
@@ -278,7 +282,8 @@ class TokenDeleteView(LoginRequiredMixin, View):
 
     def get(self, request, pk):
 
-        token = get_object_or_404(Token.objects.filter(user=request.user), pk=pk)
+        token = get_object_or_404(
+            Token.objects.filter(user=request.user), pk=pk)
         initial_data = {
             'return_url': reverse('user:token_list'),
         }
@@ -293,7 +298,8 @@ class TokenDeleteView(LoginRequiredMixin, View):
 
     def post(self, request, pk):
 
-        token = get_object_or_404(Token.objects.filter(user=request.user), pk=pk)
+        token = get_object_or_404(
+            Token.objects.filter(user=request.user), pk=pk)
         form = ConfirmationForm(request.POST)
         if form.is_valid():
             token.delete()

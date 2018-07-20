@@ -12,9 +12,9 @@ from rest_framework.views import APIView
 from circuits.filters import CircuitFilter, ProviderFilter
 from circuits.models import Circuit, Provider
 from circuits.tables import CircuitTable, ProviderTable
-from dcim.filters import DeviceFilter, DeviceTypeFilter, RackFilter, SiteFilter, VirtualChassisFilter
-from dcim.models import ConsolePort, Device, DeviceType, InterfaceConnection, PowerPort, Rack, Site, VirtualChassis
-from dcim.tables import DeviceDetailTable, DeviceTypeTable, RackTable, SiteTable, VirtualChassisTable
+from dcim.filters import DeviceFilter, DeviceTypeFilter, RackFilter, SiteFilter
+from dcim.models import ConsolePort, Device, DeviceType, InterfaceConnection, PowerPort, Rack, Site
+from dcim.tables import DeviceDetailTable, DeviceTypeTable, RackTable, SiteTable
 from extras.models import ReportResult, TopologyMap, UserAction
 from ipam.filters import AggregateFilter, IPAddressFilter, PrefixFilter, VLANFilter, VRFFilter
 from ipam.models import Aggregate, IPAddress, Prefix, VLAN, VRF
@@ -71,12 +71,6 @@ SEARCH_TYPES = OrderedDict((
         'filter': DeviceFilter,
         'table': DeviceDetailTable,
         'url': 'dcim:device_list',
-    }),
-    ('virtualchassis', {
-        'queryset': VirtualChassis.objects.select_related('master').annotate(member_count=Count('members')),
-        'filter': VirtualChassisFilter,
-        'table': VirtualChassisTable,
-        'url': 'dcim:virtualchassis_list',
     }),
     # IPAM
     ('vrf', {
@@ -218,7 +212,8 @@ class SearchView(View):
                 url = SEARCH_TYPES[obj_type]['url']
 
                 # Construct the results table for this object type
-                filtered_queryset = filter_cls({'q': form.cleaned_data['q']}, queryset=queryset).qs
+                filtered_queryset = filter_cls(
+                    {'q': form.cleaned_data['q']}, queryset=queryset).qs
                 table = table(filtered_queryset, orderable=False)
                 table.paginate(per_page=SEARCH_MAX_RESULTS)
 
@@ -245,11 +240,13 @@ class APIRootView(APIView):
     def get(self, request, format=None):
 
         return Response(OrderedDict((
-            ('circuits', reverse('circuits-api:api-root', request=request, format=format)),
+            ('circuits', reverse('circuits-api:api-root',
+                                 request=request, format=format)),
             ('dcim', reverse('dcim-api:api-root', request=request, format=format)),
             ('extras', reverse('extras-api:api-root', request=request, format=format)),
             ('ipam', reverse('ipam-api:api-root', request=request, format=format)),
             ('secrets', reverse('secrets-api:api-root', request=request, format=format)),
             ('tenancy', reverse('tenancy-api:api-root', request=request, format=format)),
-            ('virtualization', reverse('virtualization-api:api-root', request=request, format=format)),
+            ('virtualization', reverse(
+                'virtualization-api:api-root', request=request, format=format)),
         )))

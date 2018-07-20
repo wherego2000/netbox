@@ -14,11 +14,13 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AlterModelOptions(
             name='vlan',
-            options={'ordering': ['site', 'group', 'vid'], 'verbose_name': 'VLAN', 'verbose_name_plural': 'VLANs'},
+            options={'ordering': ['site', 'group', 'vid'],
+                     'verbose_name': 'VLAN', 'verbose_name_plural': 'VLANs'},
         ),
         migrations.AlterModelOptions(
             name='vlangroup',
-            options={'ordering': ['site', 'name'], 'verbose_name': 'VLAN group', 'verbose_name_plural': 'VLAN groups'},
+            options={'ordering': [
+                'site', 'name'], 'verbose_name': 'VLAN group', 'verbose_name_plural': 'VLAN groups'},
         ),
         migrations.AlterUniqueTogether(
             name='vlan',

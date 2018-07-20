@@ -19,9 +19,11 @@ def verify_postgresql_version(apps, schema_editor):
         with connection.cursor() as cursor:
             cursor.execute("SELECT VERSION()")
             row = cursor.fetchone()
-            pg_version = re.match(r'^PostgreSQL (\d+\.\d+(\.\d+)?)', row[0]).group(1)
+            pg_version = re.match(
+                '^PostgreSQL (\d+\.\d+(\.\d+)?)', row[0]).group(1)
             if StrictVersion(pg_version) < StrictVersion('9.4.0'):
-                raise Exception("PostgreSQL 9.4.0 or higher is required ({} found). Upgrade PostgreSQL and then run migrations again.".format(pg_version))
+                raise Exception(
+                    "PostgreSQL 9.4.0 or higher is required ({} found). Upgrade PostgreSQL and then run migrations again.".format(pg_version))
 
     # Skip if the database is missing (e.g. for CI testing) or misconfigured.
     except OperationalError:
@@ -40,12 +42,14 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='ReportResult',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.AutoField(auto_created=True,
+                                        primary_key=True, serialize=False, verbose_name='ID')),
                 ('report', models.CharField(max_length=255, unique=True)),
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('failed', models.BooleanField()),
                 ('data', django.contrib.postgres.fields.jsonb.JSONField()),
-                ('user', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='+', to=settings.AUTH_USER_MODEL)),
+                ('user', models.ForeignKey(blank=True, null=True,
+                                           on_delete=django.db.models.deletion.SET_NULL, related_name='+', to=settings.AUTH_USER_MODEL)),
             ],
             options={
                 'ordering': ['report'],

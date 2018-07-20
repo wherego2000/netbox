@@ -16,6 +16,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='rackreservation',
             name='rack',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='reservations', to='dcim.Rack'),
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, related_name='reservations', to='dcim.Rack'),
         ),
     ]

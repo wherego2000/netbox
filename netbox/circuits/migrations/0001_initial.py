@@ -16,15 +16,21 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Circuit',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.AutoField(auto_created=True,
+                                        primary_key=True, serialize=False, verbose_name='ID')),
                 ('created', models.DateField(auto_now_add=True)),
                 ('last_updated', models.DateTimeField(auto_now=True)),
                 ('cid', models.CharField(max_length=50, verbose_name=b'Circuit ID')),
-                ('install_date', models.DateField(blank=True, null=True, verbose_name=b'Date installed')),
-                ('port_speed', models.PositiveIntegerField(verbose_name=b'Port speed (Kbps)')),
-                ('commit_rate', models.PositiveIntegerField(blank=True, null=True, verbose_name=b'Commit rate (Kbps)')),
-                ('xconnect_id', models.CharField(blank=True, max_length=50, verbose_name=b'Cross-connect ID')),
-                ('pp_info', models.CharField(blank=True, max_length=100, verbose_name=b'Patch panel/port(s)')),
+                ('install_date', models.DateField(blank=True,
+                                                  null=True, verbose_name=b'Date installed')),
+                ('port_speed', models.PositiveIntegerField(
+                    verbose_name=b'Port speed (Kbps)')),
+                ('commit_rate', models.PositiveIntegerField(
+                    blank=True, null=True, verbose_name=b'Commit rate (Kbps)')),
+                ('xconnect_id', models.CharField(blank=True,
+                                                 max_length=50, verbose_name=b'Cross-connect ID')),
+                ('pp_info', models.CharField(blank=True,
+                                             max_length=100, verbose_name=b'Patch panel/port(s)')),
                 ('comments', models.TextField(blank=True)),
             ],
             options={
@@ -34,7 +40,8 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='CircuitType',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.AutoField(auto_created=True,
+                                        primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=50, unique=True)),
                 ('slug', models.SlugField(unique=True)),
             ],
@@ -45,16 +52,21 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Provider',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.AutoField(auto_created=True,
+                                        primary_key=True, serialize=False, verbose_name='ID')),
                 ('created', models.DateField(auto_now_add=True)),
                 ('last_updated', models.DateTimeField(auto_now=True)),
                 ('name', models.CharField(max_length=50, unique=True)),
                 ('slug', models.SlugField(unique=True)),
-                ('asn', models.PositiveIntegerField(blank=True, null=True, verbose_name=b'ASN')),
-                ('account', models.CharField(blank=True, max_length=30, verbose_name=b'Account number')),
+                ('asn', models.PositiveIntegerField(
+                    blank=True, null=True, verbose_name=b'ASN')),
+                ('account', models.CharField(blank=True,
+                                             max_length=30, verbose_name=b'Account number')),
                 ('portal_url', models.URLField(blank=True, verbose_name=b'Portal')),
-                ('noc_contact', models.TextField(blank=True, verbose_name=b'NOC contact')),
-                ('admin_contact', models.TextField(blank=True, verbose_name=b'Admin contact')),
+                ('noc_contact', models.TextField(
+                    blank=True, verbose_name=b'NOC contact')),
+                ('admin_contact', models.TextField(
+                    blank=True, verbose_name=b'Admin contact')),
                 ('comments', models.TextField(blank=True)),
             ],
             options={

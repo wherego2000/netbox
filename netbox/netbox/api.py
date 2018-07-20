@@ -17,6 +17,7 @@ class FormlessBrowsableAPIRenderer(BrowsableAPIRenderer):
     """
     Override the built-in BrowsableAPIRenderer to disable HTML forms.
     """
+
     def show_form_for_method(self, *args, **kwargs):
         return False
 
@@ -56,6 +57,7 @@ class TokenPermissions(DjangoModelPermissions):
     Custom permissions handler which extends the built-in DjangoModelPermissions to validate a Token's write ability
     for unsafe requests (POST/PUT/PATCH/DELETE).
     """
+
     def __init__(self):
         # LOGIN_REQUIRED determines whether read-only access is provided to anonymous users.
         from django.conf import settings
@@ -135,7 +137,8 @@ def get_view_name(view_cls, suffix=None):
     if hasattr(view_cls, 'queryset'):
         # Determine the model name from the queryset.
         name = view_cls.queryset.model._meta.verbose_name
-        name = ' '.join([w[0].upper() + w[1:] for w in name.split()])  # Capitalize each word
+        name = ' '.join([w[0].upper() + w[1:]
+                         for w in name.split()])  # Capitalize each word
 
     else:
         # Replicate DRF's built-in behavior.

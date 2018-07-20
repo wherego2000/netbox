@@ -46,7 +46,8 @@ class CustomFieldModel(object):
 
         # If the object exists, populate its custom fields with values
         if hasattr(self, 'pk'):
-            values = CustomFieldValue.objects.filter(obj_type=content_type, obj_id=self.pk).select_related('field')
+            values = CustomFieldValue.objects.filter(
+                obj_type=content_type, obj_id=self.pk).select_related('field')
             values_dict = {cfv.field_id: cfv.value for cfv in values}
             return OrderedDict([(field, values_dict.get(field.pk)) for field in fields])
         else:
@@ -91,7 +92,7 @@ class CustomField(models.Model):
     default = models.CharField(
         max_length=100,
         blank=True,
-        help_text='Default value for the field. Use "true" or "false" for booleans.'
+        help_text='Default value for the field. Use "true" or "false" for booleans. N/A for selection fields.'
     )
     weight = models.PositiveSmallIntegerField(
         default=100,
@@ -143,8 +144,10 @@ class CustomField(models.Model):
 
 @python_2_unicode_compatible
 class CustomFieldValue(models.Model):
-    field = models.ForeignKey('CustomField', related_name='values', on_delete=models.CASCADE)
-    obj_type = models.ForeignKey(ContentType, related_name='+', on_delete=models.PROTECT)
+    field = models.ForeignKey(
+        'CustomField', related_name='values', on_delete=models.CASCADE)
+    obj_type = models.ForeignKey(
+        ContentType, related_name='+', on_delete=models.PROTECT)
     obj_id = models.PositiveIntegerField()
     obj = GenericForeignKey('obj_type', 'obj_id')
     serialized_value = models.CharField(max_length=255)
@@ -177,7 +180,8 @@ class CustomFieldChoice(models.Model):
     field = models.ForeignKey('CustomField', related_name='choices', limit_choices_to={'type': CF_TYPE_SELECT},
                               on_delete=models.CASCADE)
     value = models.CharField(max_length=100)
-    weight = models.PositiveSmallIntegerField(default=100, help_text="Higher weights appear lower in the list")
+    weight = models.PositiveSmallIntegerField(
+        default=100, help_text="Higher weights appear lower in the list")
 
     class Meta:
         ordering = ['field', 'weight', 'value']
@@ -188,13 +192,15 @@ class CustomFieldChoice(models.Model):
 
     def clean(self):
         if self.field.type != CF_TYPE_SELECT:
-            raise ValidationError("Custom field choices can only be assigned to selection fields.")
+            raise ValidationError(
+                "Custom field choices can only be assigned to selection fields.")
 
     def delete(self, using=None, keep_parents=False):
         # When deleting a CustomFieldChoice, delete all CustomFieldValues which point to it
         pk = self.pk
         super(CustomFieldChoice, self).delete(using, keep_parents)
-        CustomFieldValue.objects.filter(field__type=CF_TYPE_SELECT, serialized_value=str(pk)).delete()
+        CustomFieldValue.objects.filter(
+            field__type=CF_TYPE_SELECT, serialized_value=str(pk)).delete()
 
 
 #
@@ -267,7 +273,8 @@ class ExportTemplate(models.Model):
             queryset.model._meta.verbose_name_plural,
             '.{}'.format(self.file_extension) if self.file_extension else ''
         )
-        response['Content-Disposition'] = 'attachment; filename="{}"'.format(filename)
+        response['Content-Disposition'] = 'attachment; filename="{}"'.format(
+            filename)
 
         return response
 
@@ -331,23 +338,28 @@ class TopologyMap(models.Model):
             # Add a pseudonode for each device_set to enforce hierarchical layout
             subgraph.node('set{}'.format(i), label='', shape='none', width='0')
             if i:
-                self.graph.edge('set{}'.format(i - 1), 'set{}'.format(i), style='invis')
+                self.graph.edge('set{}'.format(i - 1),
+                                'set{}'.format(i), style='invis')
 
             # Add each device to the graph
             devices = []
-            for query in device_set.strip(';').split(';'):  # Split regexes on semicolons
-                devices += Device.objects.filter(name__regex=query).select_related('device_role')
+            # Split regexes on semicolons
+            for query in device_set.strip(';').split(';'):
+                devices += Device.objects.filter(
+                    name__regex=query).select_related('device_role')
             # Remove duplicate devices
             devices = [d for d in devices if d.id not in seen]
             seen.update([d.id for d in devices])
             for d in devices:
                 bg_color = '#{}'.format(d.device_role.color)
                 fg_color = '#{}'.format(foreground_color(d.device_role.color))
-                subgraph.node(d.name, style='filled', fillcolor=bg_color, fontcolor=fg_color, fontname='sans')
+                subgraph.node(d.name, style='filled', fillcolor=bg_color,
+                              fontcolor=fg_color, fontname='sans')
 
             # Add an invisible connection to each successive device in a set to enforce horizontal order
             for j in range(0, len(devices) - 1):
-                subgraph.edge(devices[j].name, devices[j + 1].name, style='invis')
+                subgraph.edge(devices[j].name,
+                              devices[j + 1].name, style='invis')
 
             self.graph.subgraph(subgraph)
 
@@ -379,34 +391,40 @@ class TopologyMap(models.Model):
         )
         for c in connections:
             style = 'solid' if c.connection_status == CONNECTION_STATUS_CONNECTED else 'dashed'
-            self.graph.edge(c.interface_a.device.name, c.interface_b.device.name, style=style)
+            self.graph.edge(c.interface_a.device.name,
+                            c.interface_b.device.name, style=style)
 
         # Add all circuits to the graph
         for termination in CircuitTermination.objects.filter(term_side='A', interface__device__in=devices):
             peer_termination = termination.get_peer_termination()
             if (peer_termination is not None and peer_termination.interface is not None and
                     peer_termination.interface.device in devices):
-                self.graph.edge(termination.interface.device.name, peer_termination.interface.device.name, color='blue')
+                self.graph.edge(termination.interface.device.name,
+                                peer_termination.interface.device.name, color='blue')
 
     def add_console_connections(self, devices):
 
         from dcim.models import ConsolePort
 
         # Add all console connections to the graph
-        console_ports = ConsolePort.objects.filter(device__in=devices, cs_port__device__in=devices)
+        console_ports = ConsolePort.objects.filter(
+            device__in=devices, cs_port__device__in=devices)
         for cp in console_ports:
             style = 'solid' if cp.connection_status == CONNECTION_STATUS_CONNECTED else 'dashed'
-            self.graph.edge(cp.cs_port.device.name, cp.device.name, style=style)
+            self.graph.edge(cp.cs_port.device.name,
+                            cp.device.name, style=style)
 
     def add_power_connections(self, devices):
 
         from dcim.models import PowerPort
 
         # Add all power connections to the graph
-        power_ports = PowerPort.objects.filter(device__in=devices, power_outlet__device__in=devices)
+        power_ports = PowerPort.objects.filter(
+            device__in=devices, power_outlet__device__in=devices)
         for pp in power_ports:
             style = 'solid' if pp.connection_status == CONNECTION_STATUS_CONNECTED else 'dashed'
-            self.graph.edge(pp.power_outlet.device.name, pp.device.name, style=style)
+            self.graph.edge(pp.power_outlet.device.name,
+                            pp.device.name, style=style)
 
 
 #
@@ -435,7 +453,8 @@ class ImageAttachment(models.Model):
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     parent = GenericForeignKey('content_type', 'object_id')
-    image = models.ImageField(upload_to=image_upload, height_field='image_height', width_field='image_width')
+    image = models.ImageField(
+        upload_to=image_upload, height_field='image_height', width_field='image_width')
     image_height = models.PositiveSmallIntegerField()
     image_width = models.PositiveSmallIntegerField()
     name = models.CharField(max_length=50, blank=True)
@@ -484,7 +503,8 @@ class ReportResult(models.Model):
     """
     report = models.CharField(max_length=255, unique=True)
     created = models.DateTimeField(auto_now_add=True)
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, related_name='+', blank=True, null=True)
+    user = models.ForeignKey(
+        User, on_delete=models.SET_NULL, related_name='+', blank=True, null=True)
     failed = models.BooleanField()
     data = JSONField()
 
@@ -545,7 +565,8 @@ class UserAction(models.Model):
     A record of an action (add, edit, or delete) performed on an object by a User.
     """
     time = models.DateTimeField(auto_now_add=True, editable=False)
-    user = models.ForeignKey(User, related_name='actions', on_delete=models.CASCADE)
+    user = models.ForeignKey(
+        User, related_name='actions', on_delete=models.CASCADE)
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField(blank=True, null=True)
     action = models.PositiveSmallIntegerField(choices=ACTION_CHOICES)

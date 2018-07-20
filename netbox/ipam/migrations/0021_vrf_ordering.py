@@ -14,6 +14,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AlterModelOptions(
             name='vrf',
-            options={'ordering': ['name', 'rd'], 'verbose_name': 'VRF', 'verbose_name_plural': 'VRFs'},
+            options={'ordering': [
+                'name', 'rd'], 'verbose_name': 'VRF', 'verbose_name_plural': 'VRFs'},
         ),
     ]

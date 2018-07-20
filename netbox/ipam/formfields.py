@@ -28,4 +28,5 @@ class IPFormField(forms.Field):
         try:
             return IPNetwork(value)
         except AddrFormatError:
-            raise ValidationError("Please specify a valid IPv4 or IPv6 address.")
+            raise ValidationError(
+                "Please specify a valid IPv4 or IPv6 address.")

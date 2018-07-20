@@ -15,11 +15,13 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='interface',
             name='form_factor',
-            field=models.PositiveSmallIntegerField(choices=[[0, b'Virtual'], [800, b'10/100M (100BASE-TX)'], [1000, b'1GE (1000BASE-T)'], [1100, b'1GE (SFP)'], [1150, b'10GE (10GBASE-T)'], [1200, b'10GE (SFP+)'], [1300, b'10GE (XFP)'], [1400, b'40GE (QSFP+)']], default=1200),
+            field=models.PositiveSmallIntegerField(choices=[[0, b'Virtual'], [800, b'10/100M (100BASE-TX)'], [1000, b'1GE (1000BASE-T)'], [
+                                                   1100, b'1GE (SFP)'], [1150, b'10GE (10GBASE-T)'], [1200, b'10GE (SFP+)'], [1300, b'10GE (XFP)'], [1400, b'40GE (QSFP+)']], default=1200),
         ),
         migrations.AlterField(
             model_name='interfacetemplate',
             name='form_factor',
-            field=models.PositiveSmallIntegerField(choices=[[0, b'Virtual'], [800, b'10/100M (100BASE-TX)'], [1000, b'1GE (1000BASE-T)'], [1100, b'1GE (SFP)'], [1150, b'10GE (10GBASE-T)'], [1200, b'10GE (SFP+)'], [1300, b'10GE (XFP)'], [1400, b'40GE (QSFP+)']], default=1200),
+            field=models.PositiveSmallIntegerField(choices=[[0, b'Virtual'], [800, b'10/100M (100BASE-TX)'], [1000, b'1GE (1000BASE-T)'], [
+                                                   1100, b'1GE (SFP)'], [1150, b'10GE (10GBASE-T)'], [1200, b'10GE (SFP+)'], [1300, b'10GE (XFP)'], [1400, b'40GE (QSFP+)']], default=1200),
         ),
     ]

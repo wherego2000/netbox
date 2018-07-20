@@ -18,15 +18,20 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Service',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.AutoField(auto_created=True,
+                                        primary_key=True, serialize=False, verbose_name='ID')),
                 ('created', models.DateField(auto_now_add=True)),
                 ('last_updated', models.DateTimeField(auto_now=True)),
                 ('name', models.CharField(max_length=30)),
-                ('protocol', models.PositiveSmallIntegerField(choices=[(6, b'TCP'), (17, b'UDP')])),
-                ('port', models.PositiveIntegerField(validators=[django.core.validators.MinValueValidator(1), django.core.validators.MaxValueValidator(65535)], verbose_name=b'Port number')),
+                ('protocol', models.PositiveSmallIntegerField(
+                    choices=[(6, b'TCP'), (17, b'UDP')])),
+                ('port', models.PositiveIntegerField(validators=[django.core.validators.MinValueValidator(
+                    1), django.core.validators.MaxValueValidator(65535)], verbose_name=b'Port number')),
                 ('description', models.CharField(blank=True, max_length=100)),
-                ('device', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='services', to='dcim.Device', verbose_name=b'device')),
-                ('ipaddresses', models.ManyToManyField(blank=True, related_name='services', to='ipam.IPAddress', verbose_name=b'IP addresses')),
+                ('device', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE,
+                                             related_name='services', to='dcim.Device', verbose_name=b'device')),
+                ('ipaddresses', models.ManyToManyField(
+                    blank=True, related_name='services', to='ipam.IPAddress', verbose_name=b'IP addresses')),
             ],
             options={
                 'ordering': ['device', 'protocol', 'port'],

@@ -81,12 +81,15 @@ class ClusterTable(BaseTable):
     pk = ToggleColumn()
     name = tables.LinkColumn()
     site = tables.LinkColumn('dcim:site', args=[Accessor('site.slug')])
-    device_count = tables.Column(accessor=Accessor('devices.count'), orderable=False, verbose_name='Devices')
-    vm_count = tables.Column(accessor=Accessor('virtual_machines.count'), orderable=False, verbose_name='VMs')
+    device_count = tables.Column(accessor=Accessor(
+        'devices.count'), orderable=False, verbose_name='Devices')
+    vm_count = tables.Column(accessor=Accessor(
+        'virtual_machines.count'), orderable=False, verbose_name='VMs')
 
     class Meta(BaseTable.Meta):
         model = Cluster
-        fields = ('pk', 'name', 'type', 'group', 'site', 'device_count', 'vm_count')
+        fields = ('pk', 'name', 'type', 'group',
+                  'site', 'device_count', 'vm_count')
 
 
 #
@@ -97,13 +100,15 @@ class VirtualMachineTable(BaseTable):
     pk = ToggleColumn()
     name = tables.LinkColumn()
     status = tables.TemplateColumn(template_code=VIRTUALMACHINE_STATUS)
-    cluster = tables.LinkColumn('virtualization:cluster', args=[Accessor('cluster.pk')])
+    cluster = tables.LinkColumn('virtualization:cluster', args=[
+                                Accessor('cluster.pk')])
     role = tables.TemplateColumn(VIRTUALMACHINE_ROLE)
     tenant = tables.TemplateColumn(template_code=COL_TENANT)
 
     class Meta(BaseTable.Meta):
         model = VirtualMachine
-        fields = ('pk', 'name', 'status', 'cluster', 'role', 'tenant', 'vcpus', 'memory', 'disk')
+        fields = ('pk', 'name', 'status', 'cluster', 'role',
+                  'tenant', 'vcpus', 'memory', 'disk')
 
 
 class VirtualMachineDetailTable(VirtualMachineTable):
@@ -113,7 +118,8 @@ class VirtualMachineDetailTable(VirtualMachineTable):
 
     class Meta(BaseTable.Meta):
         model = VirtualMachine
-        fields = ('pk', 'name', 'status', 'cluster', 'role', 'tenant', 'vcpus', 'memory', 'disk', 'primary_ip')
+        fields = ('pk', 'name', 'status', 'cluster', 'role',
+                  'tenant', 'vcpus', 'memory', 'disk', 'primary_ip')
 
 
 #

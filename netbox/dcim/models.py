@@ -1,44 +1,59 @@
 from __future__ import unicode_literals
 
+import itertools
 from collections import OrderedDict
-from itertools import count, groupby
+from itertools import count
+from itertools import groupby
+from secrets.models import Secret
 
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
-from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.validators import MaxValueValidator
+from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Count, Q, ObjectDoesNotExist
+from django.db.models import Count
+from django.db.models import ObjectDoesNotExist
+from django.db.models import Q
 from django.urls import reverse
 from django.utils.encoding import python_2_unicode_compatible
-from mptt.models import MPTTModel, TreeForeignKey
-from timezone_field import TimeZoneField
+from extras.models import CustomFieldModel
+from extras.models import CustomFieldValue
+from extras.models import ImageAttachment
+from extras.rpc import RPC_CLIENTS
+from mptt.models import MPTTModel
+from mptt.models import TreeForeignKey
 
 from circuits.models import Circuit
-from extras.models import CustomFieldModel, CustomFieldValue, ImageAttachment
-from extras.rpc import RPC_CLIENTS
+from dcim.constants import *
+from dcim.fields import ASNField
+from dcim.fields import MACAddressField
+from dcim.querysets import InterfaceQuerySet
 from tenancy.models import Tenant
-from utilities.fields import ColorField, NullableCharField
+from timezone_field import TimeZoneField
+from utilities.fields import ColorField
+from utilities.fields import NullableCharField
 from utilities.managers import NaturalOrderByManager
 from utilities.models import CreatedUpdatedModel
-from .constants import *
-from .fields import ASNField, MACAddressField
-from .querysets import InterfaceQuerySet
-
 
 #
 # Regions
 #
 
+
 @python_2_unicode_compatible
 class Region(MPTTModel):
     """
     Sites can be grouped within geographic Regions.
+    Regions can be nested. Deleteion of parent `region` will
+    remove all its children and their data also.
     """
     parent = TreeForeignKey(
-        'self', null=True, blank=True, related_name='children', db_index=True, on_delete=models.CASCADE
+        'self', null=True, blank=True,
+        related_name='children',
+        db_index=True, on_delete=models.CASCADE
     )
     name = models.CharField(max_length=50, unique=True)
     slug = models.SlugField(unique=True)
@@ -75,14 +90,26 @@ class SiteManager(NaturalOrderByManager):
 @python_2_unicode_compatible
 class Site(CreatedUpdatedModel, CustomFieldModel):
     """
-    A Site represents a geographic location within a network; typically a building or campus. The optional facility
-    field can be used to include an external designation, such as a data center name (e.g. Equinix SV6).
+    A Site represents a geographic location within a network;
+    typically a building or campus. The optional facility field can be
+    used to include an external designation, such as a data center
+    name (e.g. Equinix SV6).
     """
+
+    region = models.ForeignKey(
+        'Region', related_name='sites',
+        blank=True, null=True,
+        on_delete=models.SET_NULL)
+    tenant = models.ForeignKey(
+        "tenancy.Tenant", related_name='sites',
+        blank=True, null=True,
+        on_delete=models.PROTECT)
+
     name = models.CharField(max_length=50, unique=True)
     slug = models.SlugField(unique=True)
-    status = models.PositiveSmallIntegerField(choices=SITE_STATUS_CHOICES, default=SITE_STATUS_ACTIVE)
-    region = models.ForeignKey('Region', related_name='sites', blank=True, null=True, on_delete=models.SET_NULL)
-    tenant = models.ForeignKey(Tenant, related_name='sites', blank=True, null=True, on_delete=models.PROTECT)
+    status = models.PositiveSmallIntegerField(
+        choices=SITE_STATUS_CHOICES,
+        default=SITE_STATUS_ACTIVE)
     facility = models.CharField(max_length=50, blank=True)
     asn = ASNField(blank=True, null=True, verbose_name='ASN')
     time_zone = TimeZoneField(blank=True)
@@ -91,17 +118,20 @@ class Site(CreatedUpdatedModel, CustomFieldModel):
     shipping_address = models.CharField(max_length=200, blank=True)
     contact_name = models.CharField(max_length=50, blank=True)
     contact_phone = models.CharField(max_length=20, blank=True)
-    contact_email = models.EmailField(blank=True, verbose_name="Contact E-mail")
+    contact_email = models.EmailField(
+        blank=True, verbose_name="Contact E-mail")
     comments = models.TextField(blank=True)
-    custom_field_values = GenericRelation(CustomFieldValue, content_type_field='obj_type', object_id_field='obj_id')
+    custom_field_values = GenericRelation(
+        CustomFieldValue, content_type_field='obj_type', object_id_field='obj_id')
     images = GenericRelation(ImageAttachment)
 
     objects = SiteManager()
 
     csv_headers = [
-        'name', 'slug', 'status', 'region', 'tenant', 'facility', 'asn', 'time_zone', 'description', 'physical_address',
-        'shipping_address', 'contact_name', 'contact_phone', 'contact_email', 'comments',
-    ]
+        'name', 'slug', 'status', 'region', 'tenant', 'facility',
+        'asn', 'time_zone', 'description', 'physical_address',
+        'shipping_address', 'contact_name', 'contact_phone',
+        'contact_email', 'comments', ]
 
     class Meta:
         ordering = ['name']
@@ -167,14 +197,19 @@ class Site(CreatedUpdatedModel, CustomFieldModel):
 @python_2_unicode_compatible
 class RackGroup(models.Model):
     """
-    Racks can be grouped as subsets within a Site. The scope of a group will depend on how Sites are defined. For
-    example, if a Site spans a corporate campus, a RackGroup might be defined to represent each building within that
-    campus. If a Site instead represents a single building, a RackGroup might represent a single room or floor.
+    Racks can be grouped as subsets within a Site. The scope of a
+    group will depend on how Sites are defined. For example, if a Site
+    spans a corporate campus, a RackGroup might be defined to
+    represent each building within that campus. If a Site instead
+    represents a single building, a RackGroup might represent a single
+    room or floor.
     """
+    site = models.ForeignKey(
+        'Site', related_name='rack_groups',
+        on_delete=models.CASCADE)
+
     name = models.CharField(max_length=50)
     slug = models.SlugField()
-    site = models.ForeignKey('Site', related_name='rack_groups', on_delete=models.CASCADE)
-
     csv_headers = ['site', 'name', 'slug']
 
     class Meta:
@@ -206,7 +241,6 @@ class RackRole(models.Model):
     name = models.CharField(max_length=50, unique=True)
     slug = models.SlugField(unique=True)
     color = ColorField()
-
     csv_headers = ['name', 'slug', 'color']
 
     class Meta:
@@ -235,32 +269,59 @@ class RackManager(NaturalOrderByManager):
 @python_2_unicode_compatible
 class Rack(CreatedUpdatedModel, CustomFieldModel):
     """
-    Devices are housed within Racks. Each rack has a defined height measured in rack units, and a front and rear face.
-    Each Rack is assigned to a Site and (optionally) a RackGroup.
+    Devices are housed within Racks. Each rack has a defined height
+    measured in rack units, and a front and rear face.  Each Rack is
+    assigned to a Site and (optionally) a RackGroup.
     """
+    site = models.ForeignKey(
+        'Site', related_name='racks',
+        on_delete=models.PROTECT)
+    group = models.ForeignKey(
+        'RackGroup', related_name='racks',
+        blank=True, null=True,
+        on_delete=models.SET_NULL)
+    tenant = models.ForeignKey(
+        Tenant,
+        blank=True, null=True,
+        related_name='racks',
+        on_delete=models.PROTECT)
+    role = models.ForeignKey(
+        'RackRole',
+        related_name='racks',
+        blank=True, null=True,
+        on_delete=models.PROTECT)
+
     name = models.CharField(max_length=50)
-    facility_id = NullableCharField(max_length=50, blank=True, null=True, verbose_name='Facility ID')
-    site = models.ForeignKey('Site', related_name='racks', on_delete=models.PROTECT)
-    group = models.ForeignKey('RackGroup', related_name='racks', blank=True, null=True, on_delete=models.SET_NULL)
-    tenant = models.ForeignKey(Tenant, blank=True, null=True, related_name='racks', on_delete=models.PROTECT)
-    role = models.ForeignKey('RackRole', related_name='racks', blank=True, null=True, on_delete=models.PROTECT)
-    serial = models.CharField(max_length=50, blank=True, verbose_name='Serial number')
-    type = models.PositiveSmallIntegerField(choices=RACK_TYPE_CHOICES, blank=True, null=True, verbose_name='Type')
-    width = models.PositiveSmallIntegerField(choices=RACK_WIDTH_CHOICES, default=RACK_WIDTH_19IN, verbose_name='Width',
-                                             help_text='Rail-to-rail width')
-    u_height = models.PositiveSmallIntegerField(default=42, verbose_name='Height (U)',
-                                                validators=[MinValueValidator(1), MaxValueValidator(100)])
-    desc_units = models.BooleanField(default=False, verbose_name='Descending units',
-                                     help_text='Units are numbered top-to-bottom')
+    facility_id = NullableCharField(
+        max_length=50, blank=True, null=True, verbose_name='Facility ID')
+    serial = models.CharField(
+        max_length=50, blank=True, verbose_name='Serial number')
+    type = models.PositiveSmallIntegerField(
+        choices=RACK_TYPE_CHOICES,
+        blank=True, null=True, verbose_name='Type')
+    width = models.PositiveSmallIntegerField(
+        choices=RACK_WIDTH_CHOICES,
+        default=RACK_WIDTH_19IN,
+        verbose_name='Width',
+        help_text='Rail-to-rail width')
+    u_height = models.PositiveSmallIntegerField(
+        default=42, verbose_name='Height (U)',
+        validators=[MinValueValidator(1), MaxValueValidator(100)])
+    desc_units = models.BooleanField(
+        default=False,
+        verbose_name='Descending units',
+        help_text='Units are numbered top-to-bottom')
     comments = models.TextField(blank=True)
-    custom_field_values = GenericRelation(CustomFieldValue, content_type_field='obj_type', object_id_field='obj_id')
+    custom_field_values = GenericRelation(
+        CustomFieldValue, content_type_field='obj_type', object_id_field='obj_id')
     images = GenericRelation(ImageAttachment)
 
     objects = RackManager()
 
     csv_headers = [
-        'site', 'group_name', 'name', 'facility_id', 'tenant', 'role', 'type', 'serial', 'width', 'u_height',
-        'desc_units', 'comments',
+        'site', 'group_name', 'name', 'facility_id', 'tenant', 'role',
+        'type', 'serial', 'width', 'u_height', 'desc_units',
+        'comments',
     ]
 
     class Meta:
@@ -280,7 +341,8 @@ class Rack(CreatedUpdatedModel, CustomFieldModel):
 
         if self.pk:
             # Validate that Rack is tall enough to house the installed Devices
-            top_device = Device.objects.filter(rack=self).exclude(position__isnull=True).order_by('-position').first()
+            top_device = Device.objects.filter(rack=self).exclude(
+                position__isnull=True).order_by('-position').first()
             if top_device:
                 min_height = top_device.position + top_device.device_type.u_height - 1
                 if self.u_height < min_height:
@@ -342,17 +404,22 @@ class Rack(CreatedUpdatedModel, CustomFieldModel):
 
     def get_rack_units(self, face=RACK_FACE_FRONT, exclude=None, remove_redundant=False):
         """
-        Return a list of rack units as dictionaries. Example: {'device': None, 'face': 0, 'id': 48, 'name': 'U48'}
-        Each key 'device' is either a Device or None. By default, multi-U devices are repeated for each U they occupy.
+        Return a list of rack units as dictionaries. Example:
+        {'device': None, 'face': 0, 'id': 48, 'name': 'U48'} Each key
+        'device' is either a Device or None. By default, multi-U
+        devices are repeated for each U they occupy.
 
         :param face: Rack face (front or rear)
-        :param exclude: PK of a Device to exclude (optional); helpful when relocating a Device within a Rack
-        :param remove_redundant: If True, rack units occupied by a device already listed will be omitted
+        :param exclude: PK of a Device to exclude (optional); helpful
+          when relocating a Device within a Rack
+        :param remove_redundant: If True, rack units occupied by a
+          device already listed will be omitted
         """
 
         elevation = OrderedDict()
         for u in self.units:
-            elevation[u] = {'id': u, 'name': 'U{}'.format(u), 'face': face, 'device': None}
+            elevation[u] = {'id': u, 'name': 'U{}'.format(
+                u), 'face': face, 'device': None}
 
         # Add devices to rack units list
         if self.pk:
@@ -379,17 +446,22 @@ class Rack(CreatedUpdatedModel, CustomFieldModel):
 
     def get_available_units(self, u_height=1, rack_face=None, exclude=list()):
         """
-        Return a list of units within the rack available to accommodate a device of a given U height (default 1).
-        Optionally exclude one or more devices when calculating empty units (needed when moving a device from one
-        position to another within a rack).
+        Return a list of units within the rack available to
+        accommodate a device of a given U height (default 1).
+        Optionally exclude one or more devices when calculating empty
+        units (needed when moving a device from one position to
+        another within a rack).
 
         :param u_height: Minimum number of contiguous free units required
-        :param rack_face: The face of the rack (front or rear) required; 'None' if device is full depth
-        :param exclude: List of devices IDs to exclude (useful when moving a device within a rack)
+        :param rack_face: The face of the rack (front or rear)
+          required; 'None' if device is full depth
+        :param exclude: List of devices IDs to exclude (useful when
+          moving a device within a rack)
         """
 
         # Gather all devices which consume U space within the rack
-        devices = self.devices.select_related('device_type').filter(position__gte=1).exclude(pk__in=exclude)
+        devices = self.devices.select_related('device_type').filter(
+            position__gte=1).exclude(pk__in=exclude)
 
         # Initialize the rack unit skeleton
         units = list(range(1, self.u_height + 1))
@@ -404,7 +476,8 @@ class Rack(CreatedUpdatedModel, CustomFieldModel):
                         # Found overlapping devices in the rack!
                         pass
 
-        # Remove units without enough space above them to accommodate a device of the specified height
+        # Remove units without enough space above them to accommodate a device of
+        # the specified height
         available_units = []
         for u in units:
             if set(range(u, u + u_height)).issubset(units):
@@ -414,7 +487,8 @@ class Rack(CreatedUpdatedModel, CustomFieldModel):
 
     def get_reserved_units(self):
         """
-        Return a dictionary mapping all reserved units within the rack to their reservation.
+        Return a dictionary mapping all reserved units within the rack
+        to their reservation.
         """
         reserved_units = {}
         for r in self.reservations.all():
@@ -427,7 +501,9 @@ class Rack(CreatedUpdatedModel, CustomFieldModel):
 
     def get_utilization(self):
         """
-        Determine the utilization rate of the rack and return it as a percentage.
+        Determine the utilization rate of the rack and return it as a
+        percentage. The rate is computed as `U` occupied out of all
+        available (rack's height.)
         """
         u_available = len(self.get_available_units())
         return int(float(self.u_height - u_available) / self.u_height * 100)
@@ -438,11 +514,15 @@ class RackReservation(models.Model):
     """
     One or more reserved units within a Rack.
     """
-    rack = models.ForeignKey('Rack', related_name='reservations', on_delete=models.CASCADE)
-    units = ArrayField(models.PositiveSmallIntegerField())
-    created = models.DateTimeField(auto_now_add=True)
-    tenant = models.ForeignKey(Tenant, blank=True, null=True, related_name='rackreservations', on_delete=models.PROTECT)
+    rack = models.ForeignKey(
+        'Rack', related_name='reservations', on_delete=models.CASCADE)
+    tenant = models.ForeignKey(
+        Tenant, blank=True, null=True,
+        related_name='rackreservations', on_delete=models.PROTECT)
     user = models.ForeignKey(User, on_delete=models.PROTECT)
+
+    created = models.DateTimeField(auto_now_add=True)
+    units = ArrayField(models.PositiveSmallIntegerField())
     description = models.CharField(max_length=100)
 
     class Meta:
@@ -452,7 +532,6 @@ class RackReservation(models.Model):
         return "Reservation for rack {}".format(self.rack)
 
     def clean(self):
-
         if self.units:
 
             # Validate that all specified units exist in the Rack.
@@ -483,7 +562,8 @@ class RackReservation(models.Model):
         Express the assigned units as a string of summarized ranges. For example:
             [0, 1, 2, 10, 14, 15, 16] => "0-2, 10, 14-16"
         """
-        group = (list(x) for _, x in groupby(sorted(self.units), lambda x, c=count(): next(c) - x))
+        group = (list(x) for _, x in groupby(
+            sorted(self.units), lambda x, c=count(): next(c) - x))
         return ', '.join('-'.join(map(str, (g[0], g[-1])[:len(g)])) for g in group)
 
 
@@ -494,11 +574,11 @@ class RackReservation(models.Model):
 @python_2_unicode_compatible
 class Manufacturer(models.Model):
     """
-    A Manufacturer represents a company which produces hardware devices; for example, Juniper or Dell.
+    Vendor. A Manufacturer represents a company which produces
+    hardware devices; for example, Juniper or Dell.
     """
     name = models.CharField(max_length=50, unique=True)
     slug = models.SlugField(unique=True)
-
     csv_headers = ['name', 'slug']
 
     class Meta:
@@ -520,44 +600,74 @@ class Manufacturer(models.Model):
 @python_2_unicode_compatible
 class DeviceType(models.Model, CustomFieldModel):
     """
-    A DeviceType represents a particular make (Manufacturer) and model of device. It specifies rack height and depth, as
-    well as high-level functional role(s).
+    A DeviceType represents a particular make (Manufacturer) and model
+    of device. It specifies rack height and depth, as well as
+    high-level functional role(s).
 
-    Each DeviceType can have an arbitrary number of component templates assigned to it, which define console, power, and
-    interface objects. For example, a Juniper EX4300-48T DeviceType would have:
+    Each DeviceType can have an arbitrary number of component
+    templates assigned to it, which define console, power, and
+    interface objects. For example, a Juniper EX4300-48T DeviceType
+    would have:
 
       * 1 ConsolePortTemplate
       * 2 PowerPortTemplates
       * 48 InterfaceTemplates
 
-    When a new Device of this type is created, the appropriate console, power, and interface objects (as defined by the
+    When a new Device of this type is created, the appropriate
+    console, power, and interface objects (as defined by the
     DeviceType) are automatically created as well.
     """
-    manufacturer = models.ForeignKey('Manufacturer', related_name='device_types', on_delete=models.PROTECT)
+    manufacturer = models.ForeignKey(
+        'Manufacturer',
+        related_name='device_types',
+        on_delete=models.PROTECT)
+
     model = models.CharField(max_length=50)
     slug = models.SlugField()
-    part_number = models.CharField(max_length=50, blank=True, help_text="Discrete part number (optional)")
-    u_height = models.PositiveSmallIntegerField(verbose_name='Height (U)', default=1)
-    is_full_depth = models.BooleanField(default=True, verbose_name="Is full depth",
-                                        help_text="Device consumes both front and rear rack faces")
-    interface_ordering = models.PositiveSmallIntegerField(choices=IFACE_ORDERING_CHOICES,
-                                                          default=IFACE_ORDERING_POSITION)
-    is_console_server = models.BooleanField(default=False, verbose_name='Is a console server',
-                                            help_text="This type of device has console server ports")
-    is_pdu = models.BooleanField(default=False, verbose_name='Is a PDU',
-                                 help_text="This type of device has power outlets")
-    is_network_device = models.BooleanField(default=True, verbose_name='Is a network device',
-                                            help_text="This type of device has network interfaces")
-    subdevice_role = models.NullBooleanField(default=None, verbose_name='Parent/child status',
-                                             choices=SUBDEVICE_ROLE_CHOICES,
-                                             help_text="Parent devices house child devices in device bays. Select "
-                                                       "\"None\" if this device type is neither a parent nor a child.")
+    part_number = models.CharField(
+        max_length=50, blank=True,
+        help_text="Discrete part number (optional)")
+    u_height = models.PositiveSmallIntegerField(
+        verbose_name='Height (U)', default=1)
+    is_full_depth = models.BooleanField(
+        default=True, verbose_name="Is full depth",
+        help_text="Device consumes both front and rear rack faces")
+    interface_ordering = models.PositiveSmallIntegerField(
+        choices=IFACE_ORDERING_CHOICES,
+        default=IFACE_ORDERING_POSITION)
+    is_console_server = models.BooleanField(
+        default=False,
+        verbose_name='Is a console server',
+        help_text="This type of device has console server ports")
+    is_pdu = models.BooleanField(
+        default=False,
+        verbose_name='Is a PDU',
+        help_text="This type of device has power outlets")
+
+    # Only a network device can be linked to an `Interface`,
+    # thus having an IP.
+    is_network_device = models.BooleanField(
+        default=True,
+        verbose_name='Is a network device',
+        help_text="This type of device has network interfaces")
+
+    # Subdevice is on that resides **inside** another device,
+    # for example, bay inside a server that can be used for
+    # storage or CPU.
+    subdevice_role = models.NullBooleanField(
+        default=None, verbose_name='Parent/child status',
+        choices=SUBDEVICE_ROLE_CHOICES,
+        help_text="Parent devices house child devices in device bays. Select  \
+        \"None\" if this device type is neither a parent nor a child.")
     comments = models.TextField(blank=True)
-    custom_field_values = GenericRelation(CustomFieldValue, content_type_field='obj_type', object_id_field='obj_id')
+    custom_field_values = GenericRelation(
+        CustomFieldValue, content_type_field='obj_type', object_id_field='obj_id')
 
     csv_headers = [
-        'manufacturer', 'model', 'slug', 'part_number', 'u_height', 'is_full_depth', 'is_console_server',
-        'is_pdu', 'is_network_device', 'subdevice_role', 'interface_ordering', 'comments',
+        'manufacturer', 'model', 'slug', 'part_number', 'u_height',
+        'is_full_depth', 'is_console_server', 'is_pdu',
+        'is_network_device', 'subdevice_role', 'interface_ordering',
+        'comments',
     ]
 
     class Meta:
@@ -568,7 +678,7 @@ class DeviceType(models.Model, CustomFieldModel):
         ]
 
     def __str__(self):
-        return self.model
+        return "{}/{}".format(self.manufacturer, self.model)
 
     def __init__(self, *args, **kwargs):
         super(DeviceType, self).__init__(*args, **kwargs)
@@ -597,9 +707,12 @@ class DeviceType(models.Model, CustomFieldModel):
 
     def clean(self):
 
-        # If editing an existing DeviceType to have a larger u_height, first validate that *all* instances of it have
-        # room to expand within their racks. This validation will impose a very high performance penalty when there are
-        # many instances to check, but increasing the u_height of a DeviceType should be a very rare occurrence.
+        # If editing an existing DeviceType to have a larger u_height,
+        # first validate that *all* instances of it have room to
+        # expand within their racks. This validation will impose a
+        # very high performance penalty when there are many instances
+        # to check, but increasing the u_height of a DeviceType should
+        # be a very rare occurrence.
         if self.pk is not None and self.u_height > self._original_u_height:
             for d in Device.objects.filter(device_type=self, position__isnull=False):
                 face_required = None if self.is_full_depth else d.face
@@ -611,30 +724,37 @@ class DeviceType(models.Model, CustomFieldModel):
                                     "{}U".format(d, d.rack, self.u_height)
                     })
 
+        # if we are turning off `is_console_server` flag, but the instance
+        # has console server port template associated w/ it.
         if not self.is_console_server and self.cs_port_templates.count():
             raise ValidationError({
                 'is_console_server': "Must delete all console server port templates associated with this device before "
                                      "declassifying it as a console server."
             })
 
+        # Similar to console server flag, if we are turning off
+        # `is_pdu` flag, check.
         if not self.is_pdu and self.power_outlet_templates.count():
             raise ValidationError({
                 'is_pdu': "Must delete all power outlet templates associated with this device before declassifying it "
                           "as a PDU."
             })
 
+        # Same logic for turning off `is_network_device` flag.
         if not self.is_network_device and self.interface_templates.filter(mgmt_only=False).count():
             raise ValidationError({
                 'is_network_device': "Must delete all non-management-only interface templates associated with this "
                                      "device before declassifying it as a network device."
             })
 
+        # Same logic if we are turning off `subdevice_role`.
         if self.subdevice_role != SUBDEVICE_ROLE_PARENT and self.device_bay_templates.count():
             raise ValidationError({
                 'subdevice_role': "Must delete all device bay templates associated with this device before "
                                   "declassifying it as a parent device."
             })
 
+        # If you are a _subdevice_, you can't have a height.
         if self.u_height and self.subdevice_role == SUBDEVICE_ROLE_CHILD:
             raise ValidationError({
                 'u_height': "Child device types must be 0U."
@@ -642,7 +762,7 @@ class DeviceType(models.Model, CustomFieldModel):
 
     @property
     def full_name(self):
-        return '{} {}'.format(self.manufacturer.name, self.model)
+        return '{}.{}'.format(self.manufacturer.name, self.model)
 
     @property
     def is_parent_device(self):
@@ -658,7 +778,9 @@ class ConsolePortTemplate(models.Model):
     """
     A template for a ConsolePort to be created for a new Device.
     """
-    device_type = models.ForeignKey('DeviceType', related_name='console_port_templates', on_delete=models.CASCADE)
+    device_type = models.ForeignKey(
+        'DeviceType', related_name='console_port_templates',
+        on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
 
     class Meta:
@@ -674,7 +796,9 @@ class ConsoleServerPortTemplate(models.Model):
     """
     A template for a ConsoleServerPort to be created for a new Device.
     """
-    device_type = models.ForeignKey('DeviceType', related_name='cs_port_templates', on_delete=models.CASCADE)
+    device_type = models.ForeignKey(
+        'DeviceType', related_name='cs_port_templates',
+        on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
 
     class Meta:
@@ -690,7 +814,9 @@ class PowerPortTemplate(models.Model):
     """
     A template for a PowerPort to be created for a new Device.
     """
-    device_type = models.ForeignKey('DeviceType', related_name='power_port_templates', on_delete=models.CASCADE)
+    device_type = models.ForeignKey(
+        'DeviceType', related_name='power_port_templates',
+        on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
 
     class Meta:
@@ -706,7 +832,9 @@ class PowerOutletTemplate(models.Model):
     """
     A template for a PowerOutlet to be created for a new Device.
     """
-    device_type = models.ForeignKey('DeviceType', related_name='power_outlet_templates', on_delete=models.CASCADE)
+    device_type = models.ForeignKey(
+        'DeviceType', related_name='power_outlet_templates',
+        on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
 
     class Meta:
@@ -722,12 +850,16 @@ class InterfaceTemplate(models.Model):
     """
     A template for a physical data interface on a new Device.
     """
-    device_type = models.ForeignKey('DeviceType', related_name='interface_templates', on_delete=models.CASCADE)
-    name = models.CharField(max_length=64)
-    form_factor = models.PositiveSmallIntegerField(choices=IFACE_FF_CHOICES, default=IFACE_FF_10GE_SFP_PLUS)
-    mgmt_only = models.BooleanField(default=False, verbose_name='Management only')
-
     objects = InterfaceQuerySet.as_manager()
+    device_type = models.ForeignKey(
+        'DeviceType', related_name='interface_templates',
+        on_delete=models.CASCADE)
+    name = models.CharField(max_length=64)
+    form_factor = models.PositiveSmallIntegerField(
+        choices=IFACE_FF_CHOICES,
+        default=IFACE_FF_10GE_SFP_PLUS)
+    mgmt_only = models.BooleanField(
+        default=False, verbose_name='Management only')
 
     class Meta:
         ordering = ['device_type', 'name']
@@ -742,7 +874,9 @@ class DeviceBayTemplate(models.Model):
     """
     A template for a DeviceBay to be created for a new parent Device.
     """
-    device_type = models.ForeignKey('DeviceType', related_name='device_bay_templates', on_delete=models.CASCADE)
+    device_type = models.ForeignKey(
+        'DeviceType', related_name='device_bay_templates',
+        on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
 
     class Meta:
@@ -760,9 +894,11 @@ class DeviceBayTemplate(models.Model):
 @python_2_unicode_compatible
 class DeviceRole(models.Model):
     """
-    Devices are organized by functional role; for example, "Core Switch" or "File Server". Each DeviceRole is assigned a
-    color to be used when displaying rack elevations. The vm_role field determines whether the role is applicable to
-    virtual machines as well.
+    Devices are organized by functional role; for example, "Core
+    Switch" or "File Server". Each DeviceRole is assigned a color to
+    be used when displaying rack elevations. The vm_role field
+    determines whether the role is applicable to virtual machines as
+    well.
     """
     name = models.CharField(max_length=50, unique=True)
     slug = models.SlugField(unique=True)
@@ -781,6 +917,9 @@ class DeviceRole(models.Model):
     def __str__(self):
         return self.name
 
+    def get_absolute_url(self):
+        return "{}?role={}".format(reverse('dcim:device_list'), self.slug)
+
     def to_csv(self):
         return (
             self.name,
@@ -793,14 +932,18 @@ class DeviceRole(models.Model):
 @python_2_unicode_compatible
 class Platform(models.Model):
     """
-    Platform refers to the software or firmware running on a Device. For example, "Cisco IOS-XR" or "Juniper Junos".
-    NetBox uses Platforms to determine how to interact with devices when pulling inventory data or other information by
-    specifying a NAPALM driver.
+    Platform refers to the software or firmware running on a
+    Device. For example, "Cisco IOS-XR" or "Juniper Junos".  NetBox
+    uses Platforms to determine how to interact with devices when
+    pulling inventory data or other information by specifying a NAPALM
+    driver.
+
+    NAPALM proj: https://github.com/napalm-automation/napalm
     """
     name = models.CharField(max_length=50, unique=True)
     slug = models.SlugField(unique=True)
     manufacturer = models.ForeignKey(
-        to='Manufacturer',
+        'Manufacturer',
         related_name='platforms',
         blank=True,
         null=True,
@@ -848,56 +991,99 @@ class DeviceManager(NaturalOrderByManager):
 @python_2_unicode_compatible
 class Device(CreatedUpdatedModel, CustomFieldModel):
     """
-    A Device represents a piece of physical hardware mounted within a Rack. Each Device is assigned a DeviceType,
-    DeviceRole, and (optionally) a Platform. Device names are not required, however if one is set it must be unique.
+    A Device represents a piece of physical hardware mounted
+    within a Rack. Each Device is assigned a DeviceType, DeviceRole,
+    and (optionally) a Platform. Device names are not required,
+    however if one is set it must be unique within a rack.
 
-    Each Device must be assigned to a site, and optionally to a rack within that site. Associating a device with a
-    particular rack face or unit is optional (for example, vertically mounted PDUs do not consume rack units).
+    Each Device must be assigned to a site, and optionally to a rack
+    within that site. Associating a device with a particular rack face
+    or unit is optional (for example, vertically mounted PDUs do not
+    consume rack units).
 
-    When a new Device is created, console/power/interface/device bay components are created along with it as dictated
-    by the component templates assigned to its DeviceType. Components can also be added, modified, or deleted after the
-    creation of a Device.
+    When a new Device is created, console/power/interface/device bay
+    components are created along with it as dictated by the component
+    templates assigned to its DeviceType. Components can also be
+    added, modified, or deleted after the creation of a Device.
     """
-    device_type = models.ForeignKey('DeviceType', related_name='instances', on_delete=models.PROTECT)
-    device_role = models.ForeignKey('DeviceRole', related_name='devices', on_delete=models.PROTECT)
-    tenant = models.ForeignKey(Tenant, blank=True, null=True, related_name='devices', on_delete=models.PROTECT)
-    platform = models.ForeignKey('Platform', related_name='devices', blank=True, null=True, on_delete=models.SET_NULL)
-    name = NullableCharField(max_length=64, blank=True, null=True, unique=True)
-    serial = models.CharField(max_length=50, blank=True, verbose_name='Serial number')
-    asset_tag = NullableCharField(
-        max_length=50, blank=True, null=True, unique=True, verbose_name='Asset tag',
-        help_text='A unique tag used to identify this device'
-    )
-    site = models.ForeignKey('Site', related_name='devices', on_delete=models.PROTECT)
-    rack = models.ForeignKey('Rack', related_name='devices', blank=True, null=True, on_delete=models.PROTECT)
-    position = models.PositiveSmallIntegerField(
-        blank=True, null=True, validators=[MinValueValidator(1)], verbose_name='Position (U)',
-        help_text='The lowest-numbered unit occupied by the device'
-    )
-    face = models.PositiveSmallIntegerField(blank=True, null=True, choices=RACK_FACE_CHOICES, verbose_name='Rack face')
-    status = models.PositiveSmallIntegerField(choices=DEVICE_STATUS_CHOICES, default=DEVICE_STATUS_ACTIVE, verbose_name='Status')
+    device_type = models.ForeignKey(
+        'DeviceType',
+        related_name='instances',
+        on_delete=models.PROTECT)
+    device_role = models.ForeignKey(
+        'DeviceRole',
+        related_name='devices',
+        on_delete=models.PROTECT)
+    tenant = models.ForeignKey(
+        "tenancy.Tenant",
+        blank=True, null=True,
+        related_name='devices',
+        on_delete=models.PROTECT)
+    platform = models.ForeignKey(
+        'Platform', related_name='devices',
+        blank=True, null=True,
+        on_delete=models.SET_NULL)
+    site = models.ForeignKey(
+        'Site', related_name='devices',
+        on_delete=models.PROTECT)
+    rack = models.ForeignKey(
+        'Rack', related_name='devices',
+        blank=True, null=True,
+        on_delete=models.PROTECT)
     primary_ip4 = models.OneToOneField(
-        'ipam.IPAddress', related_name='primary_ip4_for', on_delete=models.SET_NULL, blank=True, null=True,
+        'ipam.IPAddress', related_name='primary_ip4_for',
+        on_delete=models.SET_NULL,
+        blank=True, null=True,
         verbose_name='Primary IPv4'
     )
     primary_ip6 = models.OneToOneField(
-        'ipam.IPAddress', related_name='primary_ip6_for', on_delete=models.SET_NULL, blank=True, null=True,
+        'ipam.IPAddress', related_name='primary_ip6_for',
+        on_delete=models.SET_NULL,
+        blank=True, null=True,
         verbose_name='Primary IPv6'
     )
     cluster = models.ForeignKey(
-        to='virtualization.Cluster',
+        'virtualization.Cluster',
         on_delete=models.SET_NULL,
         related_name='devices',
         blank=True,
         null=True
     )
     virtual_chassis = models.ForeignKey(
-        to='VirtualChassis',
+        'VirtualChassis',
         on_delete=models.SET_NULL,
         related_name='members',
         blank=True,
         null=True
     )
+
+    name = NullableCharField(
+        max_length=64,
+        blank=True, null=True)
+    serial = models.CharField(
+        max_length=50, blank=True,
+        verbose_name='Serial number')
+    asset_tag = NullableCharField(
+        max_length=50,
+        blank=True, null=True,
+        unique=True,  # this is a tag for your own purpose, must be unique
+        verbose_name='Asset tag',
+        help_text='A unique tag used to identify this device'
+    )
+    position = models.PositiveSmallIntegerField(
+        blank=True, null=True,
+        validators=[MinValueValidator(1)],
+        verbose_name='Position (U)',
+        help_text='The lowest-numbered unit occupied by the device'
+    )
+    face = models.PositiveSmallIntegerField(
+        blank=True, null=True,
+        choices=RACK_FACE_CHOICES,
+        verbose_name='Rack face')
+    status = models.PositiveSmallIntegerField(
+        choices=DEVICE_STATUS_CHOICES,
+        default=DEVICE_STATUS_ACTIVE,
+        verbose_name='Status')
     vc_position = models.PositiveSmallIntegerField(
         blank=True,
         null=True,
@@ -909,20 +1095,28 @@ class Device(CreatedUpdatedModel, CustomFieldModel):
         validators=[MaxValueValidator(255)]
     )
     comments = models.TextField(blank=True)
-    custom_field_values = GenericRelation(CustomFieldValue, content_type_field='obj_type', object_id_field='obj_id')
+    custom_field_values = GenericRelation(
+        CustomFieldValue, content_type_field='obj_type', object_id_field='obj_id')
     images = GenericRelation(ImageAttachment)
 
     objects = DeviceManager()
 
     csv_headers = [
-        'name', 'device_role', 'tenant', 'manufacturer', 'model_name', 'platform', 'serial', 'asset_tag', 'status',
-        'site', 'rack_group', 'rack_name', 'position', 'face', 'comments',
+        'name', 'device_role', 'tenant', 'manufacturer', 'model_name',
+        'platform', 'serial', 'asset_tag', 'status', 'site',
+        'rack_group', 'rack_name', 'position', 'face', 'comments',
     ]
 
     class Meta:
         ordering = ['name']
         unique_together = [
+            # serial must be unique from a manufacturer
+            # ["device_type__manufacturer", "serial"],
+
+            # rack has only two opposite faces at any given position
             ['rack', 'position', 'face'],
+
+            # virtual position is unique within a virtual chassis
             ['virtual_chassis', 'vc_position'],
         ]
         permissions = (
@@ -960,14 +1154,7 @@ class Device(CreatedUpdatedModel, CustomFieldModel):
                 'face': "Must specify rack face when defining rack position.",
             })
 
-        # Prevent 0U devices from being assigned to a specific position
-        if self.position and self.device_type.u_height == 0:
-            raise ValidationError({
-                'position': "A U0 device type ({}) cannot be assigned to a rack position.".format(self.device_type)
-            })
-
         if self.rack:
-
             try:
                 # Child devices cannot be assigned to a rack face/unit
                 if self.device_type.is_child_device and self.face is not None:
@@ -991,7 +1178,8 @@ class Device(CreatedUpdatedModel, CustomFieldModel):
                     if self.position and self.position not in available_units:
                         raise ValidationError({
                             'position': "U{} is already occupied or does not have sufficient space to accommodate a(n) "
-                                        "{} ({}U).".format(self.position, self.device_type, self.device_type.u_height)
+                                        "{} ({}U).".format(
+                                            self.position, self.device_type, self.device_type.u_height)
                         })
                 except Rack.DoesNotExist:
                     pass
@@ -1000,35 +1188,46 @@ class Device(CreatedUpdatedModel, CustomFieldModel):
                 pass
 
         # Validate primary IP addresses
-        vc_interfaces = self.vc_interfaces.all()
-        if self.primary_ip4:
-            if self.primary_ip4.interface in vc_interfaces:
-                pass
-            elif self.primary_ip4.nat_inside is not None and self.primary_ip4.nat_inside.interface in vc_interfaces:
-                pass
-            else:
-                raise ValidationError({
-                    'primary_ip4': "The specified IP address ({}) is not assigned to this device.".format(
-                        self.primary_ip4),
-                })
-        if self.primary_ip6:
-            if self.primary_ip6.interface in vc_interfaces:
-                pass
-            elif self.primary_ip6.nat_inside is not None and self.primary_ip6.nat_inside.interface in vc_interfaces:
-                pass
-            else:
-                raise ValidationError({
-                    'primary_ip6': "The specified IP address ({}) is not assigned to this device.".format(
-                        self.primary_ip6),
-                })
+        # vc_interfaces = self.vc_interfaces.all()
+        # if self.primary_ip4:
+        #     if self.primary_ip4.interface in vc_interfaces:
+        #         pass
+        #     elif self.primary_ip4.nat_inside is not None and self.primary_ip4.nat_inside.interface in vc_interfaces:
+        #         pass
+        #     else:
+        #         raise ValidationError({
+        #             'primary_ip4': "The specified IP address ({}) is not assigned to this device.".format(
+        #                 self.primary_ip4),
+        #         })
+        # if self.primary_ip6:
+        #     if self.primary_ip6.interface in vc_interfaces:
+        #         pass
+        #     elif self.primary_ip6.nat_inside is not None and self.primary_ip6.nat_inside.interface in vc_interfaces:
+        #         pass
+        #     else:
+        #         raise ValidationError({
+        #             'primary_ip6': "The specified IP address ({}) is not assigned to this device.".format(
+        #                 self.primary_ip6),
+        #         })
 
+        # 5/21/18 by Feng: this test is not TRUE actually!
+        # If we are only viewing device as a hardware and having one type of access,
+        # then `platform` is tied to (and usually provided by) its manufacturer.
+        # However, if we are looking at a server w/ an OS on it, its `platform`
+        # can be `Linux` whose manufacture is `Red Hat`, but device type is
+        # a `Lenovo M3650`, so `Red Hat` != `Lenovo`.
+        #
+        # Therefore, we should allow device's manufacturer different from
+        # its platform vendor.
+        #
         # Validate manufacturer/platform
-        if self.device_type and self.platform:
-            if self.platform.manufacturer and self.platform.manufacturer != self.device_type.manufacturer:
-                raise ValidationError({
-                    'platform': "The assigned platform is limited to {} device types, but this device's type belongs "
-                                "to {}.".format(self.platform.manufacturer, self.device_type.manufacturer)
-                })
+        # if self.device_type and self.platform:
+        #     if self.platform.manufacturer and self.platform.manufacturer != self.device_type.manufacturer:
+        #         raise ValidationError({
+        #             'platform': "The assigned platform is limited to {} device types, but this device's type belongs "
+        #                         "to {}.".format(
+        #                             self.platform.manufacturer, self.device_type.manufacturer)
+        #         })
 
         # A Device can only be assigned to a Cluster in the same Site (or no Site)
         if self.cluster and self.cluster.site is not None and self.cluster.site != self.site:
@@ -1043,12 +1242,19 @@ class Device(CreatedUpdatedModel, CustomFieldModel):
             })
 
     def save(self, *args, **kwargs):
-
         is_new = not bool(self.pk)
 
+        # if not given a name, use its IP
+        if not self.name and self.primary_ip4:
+            self.name = str(self.primary_ip4)
+
+        if self.primary_ip4:
+            self.primary_ip4.tenant = self.tenant
+            self.primary_ip4.save()
         super(Device, self).save(*args, **kwargs)
 
-        # If this is a new Device, instantiate all of the related components per the DeviceType definition
+        # If this is a new Device, instantiate all of the related components per
+        # the DeviceType definition
         if is_new:
             ConsolePort.objects.bulk_create(
                 [ConsolePort(device=self, name=template.name) for template in
@@ -1076,7 +1282,11 @@ class Device(CreatedUpdatedModel, CustomFieldModel):
             )
 
         # Update Site and Rack assignment for any child Devices
-        Device.objects.filter(parent_bay__device=self).update(site=self.site, rack=self.rack)
+        Device.objects.filter(parent_bay__device=self).update(
+            site=self.site,
+            rack=self.rack,
+            tenant=self.tenant,
+        )
 
     def to_csv(self):
         return (
@@ -1099,22 +1309,27 @@ class Device(CreatedUpdatedModel, CustomFieldModel):
 
     @property
     def display_name(self):
+        name = ""
         if self.name:
-            return self.name
+            name = self.name
         elif self.virtual_chassis and self.virtual_chassis.master.name:
-            return "{}:{}".format(self.virtual_chassis.master, self.vc_position)
+            name = "{}:{}".format(self.virtual_chassis.master, self.vc_position)
         elif hasattr(self, 'device_type'):
-            return "{}".format(self.device_type)
-        return ""
+            name = str(self.device_type)
+
+        if self.rack:
+            name = "{}.{}.{}".format(self.rack.name, name, self.position)
+        return name
 
     @property
     def identifier(self):
         """
-        Return the device name if set; otherwise return the Device's primary key as {pk}
+        Return the device name if set; otherwise return the Device's
+        primary key as {pk}
         """
         if self.name is not None:
             return self.name
-        return '{{{}}}'.format(self.pk)
+        return str(self.pk)
 
     @property
     def primary_ip(self):
@@ -1129,55 +1344,187 @@ class Device(CreatedUpdatedModel, CustomFieldModel):
 
     def get_vc_master(self):
         """
-        If this Device is a VirtualChassis member, return the VC master. Otherwise, return None.
+        If this Device is a VirtualChassis member, return the VC
+        master. Otherwise, return None.
         """
         return self.virtual_chassis.master if self.virtual_chassis else None
 
     @property
     def vc_interfaces(self):
         """
-        Return a QuerySet matching all Interfaces assigned to this Device or, if this Device is a VC master, to another
-        Device belonging to the same VirtualChassis.
+        Return a QuerySet matching all Interfaces assigned to this Device
+        or, if this Device is a VC master, to another Device belonging
+        to the same VirtualChassis.
         """
         filter = Q(device=self)
         if self.virtual_chassis and self.virtual_chassis.master == self:
-            filter |= Q(device__virtual_chassis=self.virtual_chassis, mgmt_only=False)
+            filter |= Q(
+                device__virtual_chassis=self.virtual_chassis, mgmt_only=False)
         return Interface.objects.filter(filter)
 
     def get_children(self):
         """
-        Return the set of child Devices installed in DeviceBays within this Device.
+        Return the set of child Devices installed in DeviceBays within
+        this Device.
         """
-        return Device.objects.filter(parent_bay__device=self.pk)
+        return Device.objects.filter(parent_bay__device=self)
 
     def get_status_class(self):
         return STATUS_CLASSES[self.status]
 
     def get_rpc_client(self):
         """
-        Return the appropriate RPC (e.g. NETCONF, ssh, etc.) client for this device's platform, if one is defined.
+        Return the appropriate RPC (e.g. NETCONF, ssh, etc.) client
+        for this device's platform, if one is defined.
         """
-        if not self.platform:
+        if self.platform:
+            return RPC_CLIENTS.get(self.platform.rpc_client)
+        else:
             return None
-        return RPC_CLIENTS.get(self.platform.rpc_client)
 
+    @property
+    def management_interfaces(self):
+        """Look for:
+        1. interface.type == INTERFACE_TYPE_MANAGEMENT;
+        2. interface has ip assigned to it;
+        3. interface has a `secret` (username, pwd) linked to it.
+        """
+        return filter(lambda x: x.secrets and x.ip_addresses,
+                      Interface.objects.filter(device=self,
+                                               type=INTERFACE_TYPE_MANAGEMENT))
 
+    @property
+    def management_access(self):
+        """Return (ip, user, pwd) for SSH.
+
+        Essential information to access device management
+        interface to execute management task.
+        """
+        addr = self.primary_ip
+        management_secrets = self.secrets.filter(role__slug="management")
+        if not addr or not management_secrets:
+            return None
+        else:
+            ip = str(addr.address).split("/")[0]
+
+            # ASSUMPTION: first one matching secret.role == "management"
+            secret = management_secrets[0]
+            return (ip, secret)
+
+    @property
+    def bmc_controllers(self):
+        """BMC controller that is part of this device.
+
+        There is a parent-children relation between this device and
+        its BMC controller, which is treated as a separate `Device`.
+        Using `DeviceBay` to link the two. BMC device bears a
+        `DeviceRole` of slug `bmc` <-- this is, however, hard coded.
+        """
+        return self.get_children().filter(device_role__slug="bmc")
+
+    @property
+    def bmc_access(self):
+        """Return (ip, user, pwd) for BMC access.
+
+        Essential information for OOB management via BMC.
+        """
+        my_bmc_controllers = self.bmc_controllers
+        if not my_bmc_controllers:
+            return None
+        else:
+            bmc = my_bmc_controllers[0]
+
+        addr = bmc.primary_ip
+        management_secrets = bmc.secrets.filter(role__slug="management")
+        if not management_secrets:
+            return None
+        else:
+            ip = str(addr.address).split("/")[0]
+
+            # ASSUMPTION: first one matching secret.role == "management"
+            secret = management_secrets[0]
+            return (ip, secret)
+
+    @property
+    def untagged_vlans(self):
+        """VLAN this Device is connected
+        """
+        from ipam.models import VLAN
+        vlan_ids = self.vc_interfaces.values_list("untagged_vlan", flat=True)
+        return VLAN.objects.filter(id__in=vlan_ids)
+
+    @property
+    def tagged_vlans(self):
+        """Tagged VLAN this Device is connected
+        """
+        from ipam.models import VLAN
+        vlan_ids = self.vc_interfaces.values_list("tagged_vlan", flat=True)
+        return VLAN.objects.filter(id__in=vlan_ids)
+
+    @property
+    def switch_interfaces(self):
+        """List of logically connected switch interfaces.
+
+        A connected switch is determined by matching an interface's
+        mac address with a switch's mac address. If the two are
+        identical, we consider this interface is connected to this
+        switch.
+
+        This connection is NOT a physical connection. It only means
+        that the switch on the other side has seen one of my
+        interface's mac. For each interface, we should look at its
+        `direct_switch_port` to get a _physical_ connection.
+        """
+
+        # macs of all my interfaces
+        my_macs = Interface.objects.filter(device=self).values_list("mac_address", flat=True)
+
+        # traffics seen by switches. The Interface obj inside
+        # is pointing to the Switch who saw this mac.
+        traffics = InterfaceMacTraffic.objects.filter(mac_address__in=my_macs)
+        interfaces = traffics.values_list("interface", flat=True)
+        return Interface.objects.filter(id__in=interfaces)
+
+    @property
+    def related_devices(self):
+        # Find up to ten devices in the same site with the same
+        # functional role for quick reference.
+        return Device.objects.filter(
+            site=self.site, device_role=self.device_role
+        ).exclude(
+            pk=self.pk
+        ).select_related(
+            'rack', 'device_type__manufacturer'
+        )[:10]
 #
 # Console ports
 #
 
+
 @python_2_unicode_compatible
 class ConsolePort(models.Model):
     """
-    A physical console port within a Device. ConsolePorts connect to ConsoleServerPorts.
+    A physical console port within a Device. ConsolePorts connect to
+    ConsoleServerPorts.
     """
-    device = models.ForeignKey('Device', related_name='console_ports', on_delete=models.CASCADE)
-    name = models.CharField(max_length=50)
-    cs_port = models.OneToOneField('ConsoleServerPort', related_name='connected_console', on_delete=models.SET_NULL,
-                                   verbose_name='Console server port', blank=True, null=True)
-    connection_status = models.NullBooleanField(choices=CONNECTION_STATUS_CHOICES, default=CONNECTION_STATUS_CONNECTED)
+    device = models.ForeignKey(
+        'Device',
+        related_name='console_ports',
+        on_delete=models.CASCADE)
+    cs_port = models.OneToOneField(
+        'ConsoleServerPort',
+        related_name='connected_console',
+        on_delete=models.SET_NULL,
+        verbose_name='Console server port',
+        blank=True, null=True)
 
-    csv_headers = ['console_server', 'cs_port', 'device', 'console_port', 'connection_status']
+    name = models.CharField(max_length=50)
+    connection_status = models.NullBooleanField(
+        choices=CONNECTION_STATUS_CHOICES,
+        default=CONNECTION_STATUS_CONNECTED)
+
+    csv_headers = ['console_server', 'cs_port', 'device',
+                   'console_port', 'connection_status']
 
     class Meta:
         ordering = ['device', 'name']
@@ -1208,20 +1555,24 @@ class ConsoleServerPortManager(models.Manager):
     def get_queryset(self):
         # Pad any trailing digits to effect natural sorting
         return super(ConsoleServerPortManager, self).get_queryset().extra(select={
-            'name_padded': r"CONCAT(REGEXP_REPLACE(dcim_consoleserverport.name, '\d+$', ''), "
-                           r"LPAD(SUBSTRING(dcim_consoleserverport.name FROM '\d+$'), 8, '0'))",
+            'name_padded': "CONCAT(REGEXP_REPLACE(dcim_consoleserverport.name, '\d+$', ''), "
+                           "LPAD(SUBSTRING(dcim_consoleserverport.name FROM '\d+$'), 8, '0'))",
         }).order_by('device', 'name_padded')
 
 
 @python_2_unicode_compatible
 class ConsoleServerPort(models.Model):
     """
-    A physical port within a Device (typically a designated console server) which provides access to ConsolePorts.
+    A physical port within a Device (typically a designated console
+    server) which provides access to ConsolePorts.
     """
-    device = models.ForeignKey('Device', related_name='cs_ports', on_delete=models.CASCADE)
-    name = models.CharField(max_length=50)
-
     objects = ConsoleServerPortManager()
+
+    device = models.ForeignKey(
+        'Device', related_name='cs_ports',
+        on_delete=models.CASCADE)
+
+    name = models.CharField(max_length=50)
 
     class Meta:
         unique_together = ['device', 'name']
@@ -1236,10 +1587,11 @@ class ConsoleServerPort(models.Model):
 
         # Check that the parent device's DeviceType is a console server
         if self.device is None:
-            raise ValidationError("Console server ports must be assigned to devices.")
+            raise ValidationError(
+                "Console server ports must be assigned to devices.")
         device_type = self.device.device_type
         if not device_type.is_console_server:
-            raise ValidationError("The {} {} device type does not support assignment of console server ports.".format(
+            raise ValidationError("The {} {} device type not support assignment of console server ports.".format(
                 device_type.manufacturer, device_type
             ))
 
@@ -1251,15 +1603,26 @@ class ConsoleServerPort(models.Model):
 @python_2_unicode_compatible
 class PowerPort(models.Model):
     """
-    A physical power supply (intake) port within a Device. PowerPorts connect to PowerOutlets.
+    A physical power supply (intake) port within a Device. PowerPorts
+    connect to PowerOutlets.
     """
-    device = models.ForeignKey('Device', related_name='power_ports', on_delete=models.CASCADE)
-    name = models.CharField(max_length=50)
-    power_outlet = models.OneToOneField('PowerOutlet', related_name='connected_port', on_delete=models.SET_NULL,
-                                        blank=True, null=True)
-    connection_status = models.NullBooleanField(choices=CONNECTION_STATUS_CHOICES, default=CONNECTION_STATUS_CONNECTED)
+    device = models.ForeignKey(
+        'Device',
+        related_name='power_ports',
+        on_delete=models.CASCADE)
+    power_outlet = models.OneToOneField(
+        'PowerOutlet',
+        related_name='connected_port',
+        on_delete=models.SET_NULL,
+        blank=True, null=True)
 
-    csv_headers = ['pdu', 'power_outlet', 'device', 'power_port', 'connection_status']
+    name = models.CharField(max_length=50)
+    connection_status = models.NullBooleanField(
+        choices=CONNECTION_STATUS_CHOICES,
+        default=CONNECTION_STATUS_CONNECTED)
+
+    csv_headers = ['pdu', 'power_outlet', 'device',
+                   'power_port', 'connection_status']
 
     class Meta:
         ordering = ['device', 'name']
@@ -1290,20 +1653,24 @@ class PowerOutletManager(models.Manager):
     def get_queryset(self):
         # Pad any trailing digits to effect natural sorting
         return super(PowerOutletManager, self).get_queryset().extra(select={
-            'name_padded': r"CONCAT(REGEXP_REPLACE(dcim_poweroutlet.name, '\d+$', ''), "
-                           r"LPAD(SUBSTRING(dcim_poweroutlet.name FROM '\d+$'), 8, '0'))",
+            'name_padded': "CONCAT(REGEXP_REPLACE(dcim_poweroutlet.name, '\d+$', ''), "
+                           "LPAD(SUBSTRING(dcim_poweroutlet.name FROM '\d+$'), 8, '0'))",
         }).order_by('device', 'name_padded')
 
 
 @python_2_unicode_compatible
 class PowerOutlet(models.Model):
     """
-    A physical power outlet (output) within a Device which provides power to a PowerPort.
+    A physical power outlet (output) within a Device which provides
+    power to a PowerPort.
     """
-    device = models.ForeignKey('Device', related_name='power_outlets', on_delete=models.CASCADE)
-    name = models.CharField(max_length=50)
-
     objects = PowerOutletManager()
+
+    device = models.ForeignKey(
+        'Device',
+        related_name='power_outlets',
+        on_delete=models.CASCADE)
+    name = models.CharField(max_length=50)
 
     class Meta:
         unique_together = ['device', 'name']
@@ -1315,13 +1682,12 @@ class PowerOutlet(models.Model):
         return self.device.get_absolute_url()
 
     def clean(self):
-
         # Check that the parent device's DeviceType is a PDU
         if self.device is None:
             raise ValidationError("Power outlets must be assigned to devices.")
         device_type = self.device.device_type
         if not device_type.is_pdu:
-            raise ValidationError("The {} {} device type does not support assignment of power outlets.".format(
+            raise ValidationError("The {} {} device type not support assignment of power outlets.".format(
                 device_type.manufacturer, device_type
             ))
 
@@ -1329,19 +1695,47 @@ class PowerOutlet(models.Model):
 #
 # Interfaces
 #
+@python_2_unicode_compatible
+class InterfaceMacTraffic(models.Model):
+    """Seen mac traffic from a Switch's POV.
+
+    Switch mac table dump will include [mac, vlan, switch_port]. By
+    keeping a record of this dump, we shall be able to link a list of
+    macs to a switch port, and later figure out which mac belongs to
+    whom -- another device, or a VM, so that we can draw a topology.
+
+    """
+    interface = models.ForeignKey(
+        'Interface',
+        on_delete=models.CASCADE,
+        related_name='traffics',
+        null=True, blank=True
+    )
+    mac_address = MACAddressField(
+        null=True, blank=True,
+        verbose_name='MAC Address')
+
+    def __str__(self):
+        return "{}.{}".format(self.interface, self.mac_address)
+
+    class Meta:
+        unique_together = [("interface", "mac_address")]
+
 
 @python_2_unicode_compatible
-class Interface(models.Model):
+class Interface(CreatedUpdatedModel):
     """
-    A network interface within a Device or VirtualMachine. A physical Interface can connect to exactly one other
-    Interface via the creation of an InterfaceConnection.
+    A network interface within a Device or VirtualMachine. A physical
+    Interface can connect to exactly one other Interface via the
+    creation of an InterfaceConnection.
     """
+    objects = InterfaceQuerySet.as_manager()
+
     device = models.ForeignKey(
-        to='Device',
+        'Device',
         on_delete=models.CASCADE,
         related_name='interfaces',
-        null=True,
-        blank=True
+        null=True,   blank=True
     )
     virtual_machine = models.ForeignKey(
         to='virtualization.VirtualMachine',
@@ -1358,11 +1752,36 @@ class Interface(models.Model):
         blank=True,
         verbose_name='Parent LAG'
     )
+    untagged_vlan = models.ForeignKey(
+        to='ipam.VLAN',
+        null=True,
+        blank=True,
+        verbose_name='Untagged VLAN',
+        related_name='interfaces_as_untagged',
+        help_text="Untagged VLAN is also known as native VLAN"
+    )
+    tagged_vlans = models.ManyToManyField(
+        to='ipam.VLAN',
+        blank=True,
+        verbose_name='Tagged VLANs',
+        related_name='interfaces_as_tagged'
+    )
+
     name = models.CharField(max_length=64)
-    form_factor = models.PositiveSmallIntegerField(choices=IFACE_FF_CHOICES, default=IFACE_FF_10GE_SFP_PLUS)
+    type = models.PositiveSmallIntegerField(
+        choices=INTERFACE_TYPE_CHOICES,
+        null=True, blank=True
+    )
+    form_factor = models.PositiveSmallIntegerField(
+        choices=IFACE_FF_CHOICES,
+        default=IFACE_FF_10GE_SFP_PLUS)
     enabled = models.BooleanField(default=True)
-    mac_address = MACAddressField(null=True, blank=True, verbose_name='MAC Address')
-    mtu = models.PositiveSmallIntegerField(blank=True, null=True, verbose_name='MTU')
+    mac_address = MACAddressField(
+        null=True, blank=True,
+        verbose_name='MAC Address')
+    mtu = models.PositiveSmallIntegerField(
+        blank=True, null=True,
+        verbose_name='MTU')
     mgmt_only = models.BooleanField(
         default=False,
         verbose_name='OOB Management',
@@ -1374,47 +1793,54 @@ class Interface(models.Model):
         blank=True,
         null=True
     )
-    untagged_vlan = models.ForeignKey(
-        to='ipam.VLAN',
-        null=True,
-        blank=True,
-        verbose_name='Untagged VLAN',
-        related_name='interfaces_as_untagged'
-    )
-    tagged_vlans = models.ManyToManyField(
-        to='ipam.VLAN',
-        blank=True,
-        verbose_name='Tagged VLANs',
-        related_name='interfaces_as_tagged'
-    )
 
-    objects = InterfaceQuerySet.as_manager()
+    # for switch port
+    state = models.CharField(max_length=32,
+                             null=True,
+                             blank=True)
+    is_trunk = models.BooleanField(default=False)
+    allowed_vlans = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Comma delimitered list, eg. 100-109,200-209,700-799."
+    )
 
     class Meta:
-        ordering = ['device', 'name']
-        unique_together = ['device', 'name']
+        ordering = ['device', "virtual_machine", 'name']
+        unique_together = [('device', "name"),
+                           ("virtual_machine", "name")]
 
     def __str__(self):
-        return self.name
+        if self.device:
+            return "{}.{}".format(self.device, self.name)
+        elif self.virtual_machine:
+            return "{}.{}".format(self.virtual_machine, self.name)
+        elif self.name:
+            return self.name
+        elif self.mac_address:
+            return self.mac_address
+        return "Unknow"
 
     def get_absolute_url(self):
         return self.parent.get_absolute_url()
 
     def clean(self):
-
-        # Check that the parent device's DeviceType is a network device
+        # Check that the parent device's DeviceType is a network
+        # device
         if self.device is not None:
             device_type = self.device.device_type
             if not device_type.is_network_device:
-                raise ValidationError("The {} {} device type does not support assignment of network interfaces.".format(
+                raise ValidationError("The {} {} device type not support assignment of network interfaces.".format(
                     device_type.manufacturer, device_type
                 ))
 
         # An Interface must belong to a Device *or* to a VirtualMachine
         if self.device and self.virtual_machine:
-            raise ValidationError("An interface cannot belong to both a device and a virtual machine.")
+            raise ValidationError(
+                "An interface cannot belong to both a device and a virtual machine.")
         if not self.device and not self.virtual_machine:
-            raise ValidationError("An interface must belong to either a device or a virtual machine.")
+            raise ValidationError(
+                "An interface must belong to either a device or a virtual machine.")
 
         # VM interfaces must be virtual
         if self.virtual_machine and self.form_factor is not IFACE_FF_VIRTUAL:
@@ -1447,7 +1873,8 @@ class Interface(models.Model):
         if self.form_factor != IFACE_FF_LAG and self.member_interfaces.exists():
             raise ValidationError({
                 'form_factor': "Cannot change interface form factor; it has LAG members ({}).".format(
-                    ", ".join([iface.name for iface in self.member_interfaces.all()])
+                    ", ".join(
+                        [iface.name for iface in self.member_interfaces.all()])
                 )
             })
 
@@ -1455,16 +1882,17 @@ class Interface(models.Model):
         if self.untagged_vlan and self.untagged_vlan.site not in [self.parent.site, None]:
             raise ValidationError({
                 'untagged_vlan': "The untagged VLAN ({}) must belong to the same site as the interface's parent "
-                                 "device/VM, or it must be global".format(self.untagged_vlan)
+                                 "device/VM, or it must be global".format(
+                                     self.untagged_vlan)
             })
 
     def save(self, *args, **kwargs):
-
         # Remove untagged VLAN assignment for non-802.1Q interfaces
         if self.mode is None:
             self.untagged_vlan = None
 
-        # Only "tagged" interfaces may have tagged VLANs assigned. ("tagged all" implies all VLANs are assigned.)
+        # Only "tagged" interfaces may have tagged VLANs
+        # assigned. ("tagged all" implies all VLANs are assigned.)
         if self.pk and self.mode is not IFACE_MODE_TAGGED:
             self.tagged_vlans.clear()
 
@@ -1492,64 +1920,86 @@ class Interface(models.Model):
             return bool(self.circuit_termination)
         except ObjectDoesNotExist:
             pass
-        return bool(self.connection)
+        return bool(self.connected_interfaces)
 
     @property
-    def connection(self):
-        try:
-            return self.connected_as_a
-        except ObjectDoesNotExist:
-            pass
-        try:
-            return self.connected_as_b
-        except ObjectDoesNotExist:
-            pass
-        return None
+    def connected_interfaces(self):
+        tmp = []
+        if self.connected_as_a.all():
+            tmp += [(a, a.interface_b) for a in self.connected_as_a.all()]
+
+        if self.connected_as_b.all():
+            tmp += [(a, a.interface_a) for a in self.connected_as_b.all()]
+
+        return tmp
 
     @property
-    def connected_interface(self):
-        try:
-            if self.connected_as_a:
-                return self.connected_as_a.interface_b
-        except ObjectDoesNotExist:
-            pass
-        try:
-            if self.connected_as_b:
-                return self.connected_as_b.interface_a
-        except ObjectDoesNotExist:
-            pass
-        return None
+    def visible_interfaces(self):
+        """All interfaces who have seen my mac.
+
+        They are expected to be a switch port
+        (its device is a switch port, and its name is actually the
+        port number), that has seen this interface.
+        """
+        traffics = InterfaceMacTraffic.objects.filter(
+            mac_address=self.mac_address,
+            interface__type=INTERFACE_TYPE_SWITCH_PORT)
+        interface_ids = traffics.values_list("interface", flat=True)
+        return Interface.objects.filter(id__in=interface_ids)
+
+    @property
+    def direct_switch_connections(self):
+        """Switch port that are **directly** connected to this interface.
+
+        Switches are linked via InterfaceConnection. Therefore,
+        multiple switches can learn the same MAC by populating via
+        these inter switch links --> these we consider as **indirect**
+        links.
+
+        Therefore, we filter out these indirect links and
+        return ones that are not a switch pair.
+        """
+
+        # get interface connection that links two switch ports
+        all_inter_switch_connections = InterfaceConnection.objects.filter(
+            interface_a__type=INTERFACE_TYPE_SWITCH_PORT,
+            interface_b__type=INTERFACE_TYPE_SWITCH_PORT,
+        )
+
+        # get all these inter-switch interfaces
+        tmp = [[x.interface_a.id, x.interface_b.id] for x in all_inter_switch_connections]
+        all_inter_switch_interfaces = list(itertools.chain(*tmp))
+
+        return self.visible_interfaces.exclude(id__in=all_inter_switch_interfaces)
 
 
 class InterfaceConnection(models.Model):
     """
-    An InterfaceConnection represents a symmetrical, one-to-one connection between two Interfaces. There is no
-    significant difference between the interface_a and interface_b fields.
+    An InterfaceConnection represents a symmetrical, one-to-one
+    connection between two Interfaces. There is no significant
+    difference between the interface_a and interface_b fields.
     """
-    interface_a = models.OneToOneField('Interface', related_name='connected_as_a', on_delete=models.CASCADE)
-    interface_b = models.OneToOneField('Interface', related_name='connected_as_b', on_delete=models.CASCADE)
-    connection_status = models.BooleanField(choices=CONNECTION_STATUS_CHOICES, default=CONNECTION_STATUS_CONNECTED,
-                                            verbose_name='Status')
+    interface_a = models.ForeignKey(
+        'Interface',
+        related_name='connected_as_a',
+        on_delete=models.CASCADE)
+    interface_b = models.ForeignKey(
+        'Interface',
+        related_name='connected_as_b',
+        on_delete=models.CASCADE)
+    connection_status = models.BooleanField(
+        choices=CONNECTION_STATUS_CHOICES,
+        default=CONNECTION_STATUS_CONNECTED,
+        verbose_name='Status')
 
-    csv_headers = ['device_a', 'interface_a', 'device_b', 'interface_b', 'connection_status']
+    csv_headers = ['device_a', 'interface_a', 'device_b',
+                   'interface_b', 'connection_status']
 
     def clean(self):
         try:
             if self.interface_a == self.interface_b:
                 raise ValidationError({
                     'interface_b': "Cannot connect an interface to itself."
-                })
-            if self.interface_a.form_factor in NONCONNECTABLE_IFACE_TYPES:
-                raise ValidationError({
-                    'interface_a': '{} is not a connectable interface type.'.format(
-                        self.interface_a.get_form_factor_display()
-                    )
-                })
-            if self.interface_b.form_factor in NONCONNECTABLE_IFACE_TYPES:
-                raise ValidationError({
-                    'interface_b': '{} is not a connectable interface type.'.format(
-                        self.interface_b.get_form_factor_display()
-                    )
                 })
         except ObjectDoesNotExist:
             pass
@@ -1573,10 +2023,21 @@ class DeviceBay(models.Model):
     """
     An empty space within a Device which can house a child device
     """
-    device = models.ForeignKey('Device', related_name='device_bays', on_delete=models.CASCADE)
+    # this is parent device
+    device = models.ForeignKey(
+        'Device', related_name='device_bays',
+        verbose_name="parent device",
+        on_delete=models.CASCADE)
+
+    # this is the bay device
+    installed_device = models.OneToOneField(
+        'Device',
+        related_name='parent_bay',
+        on_delete=models.SET_NULL,
+        verbose_name="bay device",
+        blank=True, null=True,
+        help_text="Bay device installed inside a parent device.")
     name = models.CharField(max_length=50, verbose_name='Name')
-    installed_device = models.OneToOneField('Device', related_name='parent_bay', on_delete=models.SET_NULL, blank=True,
-                                            null=True)
 
     class Meta:
         ordering = ['device', 'name']
@@ -1605,29 +2066,53 @@ class DeviceBay(models.Model):
 # Inventory items
 #
 
+
 @python_2_unicode_compatible
 class InventoryItem(models.Model):
     """
-    An InventoryItem represents a serialized piece of hardware within a Device, such as a line card or power supply.
-    InventoryItems are used only for inventory purposes.
+    An InventoryItem represents a serialized piece of hardware within
+    a Device, such as a line card or power supply.  InventoryItems are
+    used only for inventory purposes.
     """
-    device = models.ForeignKey('Device', related_name='inventory_items', on_delete=models.CASCADE)
-    parent = models.ForeignKey('self', related_name='child_items', blank=True, null=True, on_delete=models.CASCADE)
-    name = models.CharField(max_length=50, verbose_name='Name')
+    device = models.ForeignKey(
+        'Device', related_name='inventory_items',
+        on_delete=models.CASCADE)
+    parent = models.ForeignKey(
+        'self', related_name='child_items',
+        blank=True, null=True,
+        on_delete=models.CASCADE)
     manufacturer = models.ForeignKey(
-        'Manufacturer', models.PROTECT, related_name='inventory_items', blank=True, null=True
+        'Manufacturer',
+        models.PROTECT,
+        related_name='inventory_items',
+        blank=True, null=True
     )
-    part_id = models.CharField(max_length=50, verbose_name='Part ID', blank=True)
-    serial = models.CharField(max_length=50, verbose_name='Serial number', blank=True)
+
+    device_type = models.ForeignKey(
+        "DeviceType",
+        related_name="device_types",
+        blank=True, null=True,
+        on_delete=models.CASCADE,
+    )
+
+    name = models.CharField(max_length=50, verbose_name='Name')
+    part_id = models.CharField(
+        max_length=50, verbose_name='Part ID', blank=True)
+    serial = models.CharField(
+        max_length=50, verbose_name='Serial number', blank=True)
     asset_tag = NullableCharField(
-        max_length=50, blank=True, null=True, unique=True, verbose_name='Asset tag',
+        max_length=50,
+        blank=True, null=True,
+        unique=True,
+        verbose_name='Asset tag',
         help_text='A unique tag used to identify this item'
     )
     discovered = models.BooleanField(default=False, verbose_name='Discovered')
-    description = models.CharField(max_length=100, blank=True)
+    description = models.TextField(blank=True)
 
     csv_headers = [
-        'device', 'name', 'manufacturer', 'part_id', 'serial', 'asset_tag', 'discovered', 'description',
+        'device', 'name', 'manufacturer', 'part_id', 'serial',
+        'asset_tag', 'discovered', 'description',
     ]
 
     class Meta:
@@ -1660,10 +2145,11 @@ class InventoryItem(models.Model):
 @python_2_unicode_compatible
 class VirtualChassis(models.Model):
     """
-    A collection of Devices which operate with a shared control plane (e.g. a switch stack).
+    A collection of Devices which operate with a shared control plane
+    (e.g. a switch stack).
     """
     master = models.OneToOneField(
-        to='Device',
+        'Device',
         on_delete=models.PROTECT,
         related_name='vc_master_for'
     )
@@ -1684,7 +2170,8 @@ class VirtualChassis(models.Model):
 
     def clean(self):
 
-        # Verify that the selected master device has been assigned to this VirtualChassis. (Skip when creating a new
+        # Verify that the selected master device has been assigned to
+        # this VirtualChassis. (Skip when creating a new
         # VirtualChassis.)
         if self.pk and self.master not in self.members.all():
             raise ValidationError({

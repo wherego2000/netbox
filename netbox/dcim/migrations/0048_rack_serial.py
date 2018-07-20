@@ -15,6 +15,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='rack',
             name='serial',
-            field=models.CharField(blank=True, max_length=50, verbose_name='Serial number'),
+            field=models.CharField(
+                blank=True, max_length=50, verbose_name='Serial number'),
         ),
     ]

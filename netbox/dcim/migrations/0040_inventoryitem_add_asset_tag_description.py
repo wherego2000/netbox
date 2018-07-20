@@ -16,7 +16,8 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='inventoryitem',
             name='asset_tag',
-            field=utilities.fields.NullableCharField(blank=True, help_text='A unique tag used to identify this item', max_length=50, null=True, unique=True, verbose_name='Asset tag'),
+            field=utilities.fields.NullableCharField(
+                blank=True, help_text='A unique tag used to identify this item', max_length=50, null=True, unique=True, verbose_name='Asset tag'),
         ),
         migrations.AddField(
             model_name='inventoryitem',

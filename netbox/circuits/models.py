@@ -22,14 +22,17 @@ class Provider(CreatedUpdatedModel, CustomFieldModel):
     name = models.CharField(max_length=50, unique=True)
     slug = models.SlugField(unique=True)
     asn = ASNField(blank=True, null=True, verbose_name='ASN')
-    account = models.CharField(max_length=30, blank=True, verbose_name='Account number')
+    account = models.CharField(
+        max_length=30, blank=True, verbose_name='Account number')
     portal_url = models.URLField(blank=True, verbose_name='Portal')
     noc_contact = models.TextField(blank=True, verbose_name='NOC contact')
     admin_contact = models.TextField(blank=True, verbose_name='Admin contact')
     comments = models.TextField(blank=True)
-    custom_field_values = GenericRelation(CustomFieldValue, content_type_field='obj_type', object_id_field='obj_id')
+    custom_field_values = GenericRelation(
+        CustomFieldValue, content_type_field='obj_type', object_id_field='obj_id')
 
-    csv_headers = ['name', 'slug', 'asn', 'account', 'portal_url', 'noc_contact', 'admin_contact', 'comments']
+    csv_headers = ['name', 'slug', 'asn', 'account',
+                   'portal_url', 'noc_contact', 'admin_contact', 'comments']
 
     class Meta:
         ordering = ['name']
@@ -88,15 +91,22 @@ class Circuit(CreatedUpdatedModel, CustomFieldModel):
     interface, but this is not required. Circuit port speed and commit rate are measured in Kbps.
     """
     cid = models.CharField(max_length=50, verbose_name='Circuit ID')
-    provider = models.ForeignKey('Provider', related_name='circuits', on_delete=models.PROTECT)
-    type = models.ForeignKey('CircuitType', related_name='circuits', on_delete=models.PROTECT)
-    status = models.PositiveSmallIntegerField(choices=CIRCUIT_STATUS_CHOICES, default=CIRCUIT_STATUS_ACTIVE)
-    tenant = models.ForeignKey(Tenant, related_name='circuits', blank=True, null=True, on_delete=models.PROTECT)
-    install_date = models.DateField(blank=True, null=True, verbose_name='Date installed')
-    commit_rate = models.PositiveIntegerField(blank=True, null=True, verbose_name='Commit rate (Kbps)')
+    provider = models.ForeignKey(
+        'Provider', related_name='circuits', on_delete=models.PROTECT)
+    type = models.ForeignKey(
+        'CircuitType', related_name='circuits', on_delete=models.PROTECT)
+    status = models.PositiveSmallIntegerField(
+        choices=CIRCUIT_STATUS_CHOICES, default=CIRCUIT_STATUS_ACTIVE)
+    tenant = models.ForeignKey(
+        Tenant, related_name='circuits', blank=True, null=True, on_delete=models.PROTECT)
+    install_date = models.DateField(
+        blank=True, null=True, verbose_name='Date installed')
+    commit_rate = models.PositiveIntegerField(
+        blank=True, null=True, verbose_name='Commit rate (Kbps)')
     description = models.CharField(max_length=100, blank=True)
     comments = models.TextField(blank=True)
-    custom_field_values = GenericRelation(CustomFieldValue, content_type_field='obj_type', object_id_field='obj_id')
+    custom_field_values = GenericRelation(
+        CustomFieldValue, content_type_field='obj_type', object_id_field='obj_id')
 
     csv_headers = [
         'cid', 'provider', 'type', 'status', 'tenant', 'install_date', 'commit_rate', 'description', 'comments',
@@ -145,9 +155,12 @@ class Circuit(CreatedUpdatedModel, CustomFieldModel):
 
 @python_2_unicode_compatible
 class CircuitTermination(models.Model):
-    circuit = models.ForeignKey('Circuit', related_name='terminations', on_delete=models.CASCADE)
-    term_side = models.CharField(max_length=1, choices=TERM_SIDE_CHOICES, verbose_name='Termination')
-    site = models.ForeignKey('dcim.Site', related_name='circuit_terminations', on_delete=models.PROTECT)
+    circuit = models.ForeignKey(
+        'Circuit', related_name='terminations', on_delete=models.CASCADE)
+    term_side = models.CharField(
+        max_length=1, choices=TERM_SIDE_CHOICES, verbose_name='Termination')
+    site = models.ForeignKey(
+        'dcim.Site', related_name='circuit_terminations', on_delete=models.PROTECT)
     interface = models.OneToOneField(
         'dcim.Interface', related_name='circuit_termination', blank=True, null=True, on_delete=models.PROTECT
     )
@@ -156,8 +169,10 @@ class CircuitTermination(models.Model):
         blank=True, null=True, verbose_name='Upstream speed (Kbps)',
         help_text='Upstream speed, if different from port speed'
     )
-    xconnect_id = models.CharField(max_length=50, blank=True, verbose_name='Cross-connect ID')
-    pp_info = models.CharField(max_length=100, blank=True, verbose_name='Patch panel/port(s)')
+    xconnect_id = models.CharField(
+        max_length=50, blank=True, verbose_name='Cross-connect ID')
+    pp_info = models.CharField(
+        max_length=100, blank=True, verbose_name='Patch panel/port(s)')
 
     class Meta:
         ordering = ['circuit', 'term_side']

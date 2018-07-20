@@ -60,13 +60,17 @@ class SecretRoleTest(HttpStatusMixin, APITestCase):
         token = Token.objects.create(user=user)
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
-        self.secretrole1 = SecretRole.objects.create(name='Test Secret Role 1', slug='test-secret-role-1')
-        self.secretrole2 = SecretRole.objects.create(name='Test Secret Role 2', slug='test-secret-role-2')
-        self.secretrole3 = SecretRole.objects.create(name='Test Secret Role 3', slug='test-secret-role-3')
+        self.secretrole1 = SecretRole.objects.create(
+            name='Test Secret Role 1', slug='test-secret-role-1')
+        self.secretrole2 = SecretRole.objects.create(
+            name='Test Secret Role 2', slug='test-secret-role-2')
+        self.secretrole3 = SecretRole.objects.create(
+            name='Test Secret Role 3', slug='test-secret-role-3')
 
     def test_get_secretrole(self):
 
-        url = reverse('secrets-api:secretrole-detail', kwargs={'pk': self.secretrole1.pk})
+        url = reverse('secrets-api:secretrole-detail',
+                      kwargs={'pk': self.secretrole1.pk})
         response = self.client.get(url, **self.header)
 
         self.assertEqual(response.data['name'], self.secretrole1.name)
@@ -127,7 +131,8 @@ class SecretRoleTest(HttpStatusMixin, APITestCase):
             'slug': 'test-secretrole-x',
         }
 
-        url = reverse('secrets-api:secretrole-detail', kwargs={'pk': self.secretrole1.pk})
+        url = reverse('secrets-api:secretrole-detail',
+                      kwargs={'pk': self.secretrole1.pk})
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
@@ -138,7 +143,8 @@ class SecretRoleTest(HttpStatusMixin, APITestCase):
 
     def test_delete_secretrole(self):
 
-        url = reverse('secrets-api:secretrole-detail', kwargs={'pk': self.secretrole1.pk})
+        url = reverse('secrets-api:secretrole-detail',
+                      kwargs={'pk': self.secretrole1.pk})
         response = self.client.delete(url, **self.header)
 
         self.assertHttpStatus(response, status.HTTP_204_NO_CONTENT)
@@ -170,14 +176,19 @@ class SecretTest(HttpStatusMixin, APITestCase):
         }
 
         site = Site.objects.create(name='Test Site 1', slug='test-site-1')
-        manufacturer = Manufacturer.objects.create(name='Test Manufacturer 1', slug='test-manufacturer-1')
-        devicetype = DeviceType.objects.create(manufacturer=manufacturer, model='Test Device Type 1')
-        devicerole = DeviceRole.objects.create(name='Test Device Role 1', slug='test-device-role-1')
+        manufacturer = Manufacturer.objects.create(
+            name='Test Manufacturer 1', slug='test-manufacturer-1')
+        devicetype = DeviceType.objects.create(
+            manufacturer=manufacturer, model='Test Device Type 1')
+        devicerole = DeviceRole.objects.create(
+            name='Test Device Role 1', slug='test-device-role-1')
         self.device = Device.objects.create(
             name='Test Device 1', site=site, device_type=devicetype, device_role=devicerole
         )
-        self.secretrole1 = SecretRole.objects.create(name='Test Secret Role 1', slug='test-secret-role-1')
-        self.secretrole2 = SecretRole.objects.create(name='Test Secret Role 2', slug='test-secret-role-2')
+        self.secretrole1 = SecretRole.objects.create(
+            name='Test Secret Role 1', slug='test-secret-role-1')
+        self.secretrole2 = SecretRole.objects.create(
+            name='Test Secret Role 2', slug='test-secret-role-2')
         self.secret1 = Secret(
             device=self.device, role=self.secretrole1, name='Test Secret 1', plaintext=self.plaintext['secret1']
         )
@@ -196,7 +207,8 @@ class SecretTest(HttpStatusMixin, APITestCase):
 
     def test_get_secret(self):
 
-        url = reverse('secrets-api:secret-detail', kwargs={'pk': self.secret1.pk})
+        url = reverse('secrets-api:secret-detail',
+                      kwargs={'pk': self.secret1.pk})
         response = self.client.get(url, **self.header)
 
         self.assertEqual(response.data['plaintext'], self.plaintext['secret1'])
@@ -268,7 +280,8 @@ class SecretTest(HttpStatusMixin, APITestCase):
             'plaintext': 'NewPlaintext',
         }
 
-        url = reverse('secrets-api:secret-detail', kwargs={'pk': self.secret1.pk})
+        url = reverse('secrets-api:secret-detail',
+                      kwargs={'pk': self.secret1.pk})
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
@@ -281,7 +294,8 @@ class SecretTest(HttpStatusMixin, APITestCase):
 
     def test_delete_secret(self):
 
-        url = reverse('secrets-api:secret-detail', kwargs={'pk': self.secret1.pk})
+        url = reverse('secrets-api:secret-detail',
+                      kwargs={'pk': self.secret1.pk})
         response = self.client.delete(url, **self.header)
 
         self.assertHttpStatus(response, status.HTTP_204_NO_CONTENT)
@@ -317,13 +331,15 @@ class GetSessionKeyTest(HttpStatusMixin, APITestCase):
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
         self.assertIsNotNone(response.data.get('session_key'))
-        self.assertNotEqual(response.data.get('session_key'), encoded_session_key)
+        self.assertNotEqual(response.data.get(
+            'session_key'), encoded_session_key)
 
     def test_get_session_key_preserved(self):
 
         encoded_session_key = base64.b64encode(self.session_key.key).decode()
 
-        url = reverse('secrets-api:get-session-key-list') + '?preserve_key=True'
+        url = reverse('secrets-api:get-session-key-list') + \
+            '?preserve_key=True'
         data = {
             'private_key': PRIVATE_KEY,
         }

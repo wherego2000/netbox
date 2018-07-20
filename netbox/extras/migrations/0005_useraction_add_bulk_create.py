@@ -15,6 +15,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='useraction',
             name='action',
-            field=models.PositiveSmallIntegerField(choices=[(1, b'created'), (7, b'bulk created'), (2, b'imported'), (3, b'modified'), (4, b'bulk edited'), (5, b'deleted'), (6, b'bulk deleted')]),
+            field=models.PositiveSmallIntegerField(choices=[(1, b'created'), (7, b'bulk created'), (
+                2, b'imported'), (3, b'modified'), (4, b'bulk edited'), (5, b'deleted'), (6, b'bulk deleted')]),
         ),
     ]

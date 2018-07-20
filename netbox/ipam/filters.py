@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 import django_filters
-from django.core.exceptions import ValidationError
 from django.db.models import Q
 import netaddr
 from netaddr.core import AddrFormatError
@@ -234,10 +233,6 @@ class IPAddressFilter(CustomFieldFilterSet, django_filters.FilterSet):
         method='search_by_parent',
         label='Parent prefix',
     )
-    address = django_filters.CharFilter(
-        method='filter_address',
-        label='Address',
-    )
     mask_length = django_filters.NumberFilter(
         method='filter_mask_length',
         label='Mask length',
@@ -318,17 +313,6 @@ class IPAddressFilter(CustomFieldFilterSet, django_filters.FilterSet):
         except (AddrFormatError, ValueError):
             return queryset.none()
 
-    def filter_address(self, queryset, name, value):
-        if not value.strip():
-            return queryset
-        try:
-            # Match address and subnet mask
-            if '/' in value:
-                return queryset.filter(address=value)
-            return queryset.filter(address__net_host=value)
-        except ValidationError:
-            return queryset.none()
-
     def filter_mask_length(self, queryset, name, value):
         if not value:
             return queryset
@@ -336,8 +320,10 @@ class IPAddressFilter(CustomFieldFilterSet, django_filters.FilterSet):
 
     def filter_device(self, queryset, name, value):
         try:
-            device = Device.objects.select_related('device_type').get(**{name: value})
-            vc_interface_ids = [i['id'] for i in device.vc_interfaces.values('id')]
+            device = Device.objects.select_related(
+                'device_type').get(**{name: value})
+            vc_interface_ids = [i['id']
+                                for i in device.vc_interfaces.values('id')]
             return queryset.filter(interface_id__in=vc_interface_ids)
         except Device.DoesNotExist:
             return queryset.none()

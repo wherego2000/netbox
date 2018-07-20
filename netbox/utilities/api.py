@@ -30,6 +30,7 @@ class IsAuthenticatedOrLoginNotRequired(BasePermission):
     """
     Returns True if the user is authenticated or LOGIN_REQUIRED is False.
     """
+
     def has_permission(self, request, view):
         if not settings.LOGIN_REQUIRED:
             return True
@@ -44,6 +45,7 @@ class ValidatedModelSerializer(ModelSerializer):
     """
     Extends the built-in ModelSerializer to enforce calling clean() on the associated model during validation.
     """
+
     def validate(self, data):
 
         # Remove custom field data (if any) prior to model validation
@@ -71,6 +73,7 @@ class ChoiceFieldSerializer(Field):
     """
     Represent a ChoiceField as {'value': <DB value>, 'label': <string>}.
     """
+
     def __init__(self, choices, **kwargs):
         self._choices = dict()
         for k, v in choices:
@@ -93,6 +96,7 @@ class ContentTypeFieldSerializer(Field):
     """
     Represent a ContentType as '<app_label>.<model>'
     """
+
     def to_representation(self, obj):
         return "{}.{}".format(obj.app_label, obj.model)
 
@@ -136,6 +140,7 @@ class ModelViewSet(mixins.CreateModelMixin,
     1. Use an alternate serializer (if provided) for write operations
     2. Accept either a single object or a list of objects to create
     """
+
     def get_serializer_class(self):
         # Check for a different serializer to use for write operations
         if self.action in WRITE_OPERATIONS and hasattr(self, 'write_serializer_class'):

@@ -2,19 +2,23 @@ from __future__ import unicode_literals
 
 import os
 
-from Crypto.Cipher import AES, PKCS1_OAEP
+from Crypto.Cipher import AES
+from Crypto.Cipher import PKCS1_OAEP
 from Crypto.PublicKey import RSA
 from Crypto.Util import strxor
 from django.conf import settings
-from django.contrib.auth.hashers import make_password, check_password
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.hashers import check_password
+from django.contrib.auth.hashers import make_password
+from django.contrib.auth.models import Group
+from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.urls import reverse
-from django.utils.encoding import force_bytes, python_2_unicode_compatible
+from django.utils.encoding import force_bytes
+from django.utils.encoding import python_2_unicode_compatible
 
-from dcim.models import Device
 from utilities.models import CreatedUpdatedModel
+
 from .exceptions import InvalidKey
 from .hashers import SecretValidationHasher
 from .querysets import UserKeyQuerySet
@@ -22,10 +26,12 @@ from .querysets import UserKeyQuerySet
 
 def generate_random_key(bits=256):
     """
-    Generate a random encryption key. Sizes is given in bits and must be in increments of 32.
+    Generate a random encryption key. Sizes is given in bits and must
+    be in increments of 32.
     """
     if bits % 32:
-        raise Exception("Invalid key size ({}). Key sizes must be in increments of 32 bits.".format(bits))
+        raise Exception("Invalid key size({}). Key sizes must be in increments of \
+                        32 bits.".format(bits))
     return os.urandom(int(bits / 8))
 
 
@@ -50,13 +56,18 @@ def decrypt_master_key(master_key_cipher, private_key):
 @python_2_unicode_compatible
 class UserKey(CreatedUpdatedModel):
     """
-    A UserKey stores a user's personal RSA (public) encryption key, which is used to generate their unique encrypted
-    copy of the master encryption key. The encrypted instance of the master key can be decrypted only with the user's
-    matching (private) decryption key.
+    A UserKey stores a user's personal RSA (public) encryption key,
+    which is used to generate their unique encrypted copy of the
+    master encryption key. The encrypted instance of the master key
+    can be decrypted only with the user's matching (private)
+    decryption key.
     """
-    user = models.OneToOneField(User, related_name='user_key', editable=False, on_delete=models.CASCADE)
+    user = models.OneToOneField(
+        User, related_name='user_key',
+        editable=False, on_delete=models.CASCADE)
     public_key = models.TextField(verbose_name='RSA public key')
-    master_key_cipher = models.BinaryField(max_length=512, blank=True, null=True, editable=False)
+    master_key_cipher = models.BinaryField(
+        max_length=512, blank=True, null=True, editable=False)
 
     objects = UserKeyQuerySet.as_manager()
 
@@ -87,9 +98,12 @@ class UserKey(CreatedUpdatedModel):
                 raise ValidationError({
                     'public_key': "Invalid RSA key format."
                 })
-            except Exception:
-                raise ValidationError("Something went wrong while trying to save your key. Please ensure that you're "
-                                      "uploading a valid RSA public key in PEM format (no SSH/PGP).")
+            except:
+                raise ValidationError("Something went wrong while \
+                                      trying to save your key. Please \
+                                      ensure that you're " "uploading \
+                                      a valid RSA public key in PEM \
+                                      format(no SSH / PGP).")
 
             # Validate the public key length
             pubkey_length = pubkey.size_in_bits()
@@ -115,17 +129,20 @@ class UserKey(CreatedUpdatedModel):
         if self.__initial_master_key_cipher and self.public_key != self.__initial_public_key:
             self.master_key_cipher = None
 
-        # If no other active UserKeys exist, generate a new master key and use it to activate this UserKey.
+        # If no other active UserKeys exist, generate a new master key and use it
+        # to activate this UserKey.
         if self.is_filled() and not self.is_active() and not UserKey.objects.active().count():
             master_key = generate_random_key()
-            self.master_key_cipher = encrypt_master_key(master_key, self.public_key)
+            self.master_key_cipher = encrypt_master_key(
+                master_key, self.public_key)
 
         super(UserKey, self).save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-
-        # If Secrets exist and this is the last active UserKey, prevent its deletion. Deleting the last UserKey will
-        # result in the master key being destroyed and rendering all Secrets inaccessible.
+        # If Secrets exist and this is the last active UserKey,
+        # prevent its deletion. Deleting the last UserKey will result
+        # in the master key being destroyed and rendering all Secrets
+        # inaccessible.
         if Secret.objects.count() and [uk.pk for uk in UserKey.objects.active()] == [self.pk]:
             raise Exception("Cannot delete the last active UserKey when Secrets exist! This would render all secrets "
                             "inaccessible.")
@@ -134,14 +151,16 @@ class UserKey(CreatedUpdatedModel):
 
     def is_filled(self):
         """
-        Returns True if the UserKey has been filled with a public RSA key.
+        Returns True if the UserKey has been filled with a public RSA
+        key.
         """
         return bool(self.public_key)
     is_filled.boolean = True
 
     def is_active(self):
         """
-        Returns True if the UserKey has been populated with an encrypted copy of the master key.
+        Returns True if the UserKey has been populated with an
+        encrypted copy of the master key.
         """
         return self.master_key_cipher is not None
     is_active.boolean = True
@@ -151,7 +170,8 @@ class UserKey(CreatedUpdatedModel):
         Given the User's private key, return the encrypted master key.
         """
         if not self.is_active:
-            raise ValueError("Unable to retrieve master key: UserKey is inactive.")
+            raise ValueError(
+                "Unable to retrieve master key: UserKey is inactive.")
         try:
             return decrypt_master_key(force_bytes(self.master_key_cipher), private_key)
         except ValueError:
@@ -159,20 +179,26 @@ class UserKey(CreatedUpdatedModel):
 
     def activate(self, master_key):
         """
-        Activate the UserKey by saving an encrypted copy of the master key to the database.
+        Activate the UserKey by saving an encrypted copy of the master
+        key to the database.
         """
         if not self.public_key:
-            raise Exception("Cannot activate UserKey: Its public key must be filled first.")
-        self.master_key_cipher = encrypt_master_key(master_key, self.public_key)
+            raise Exception(
+                "Cannot activate UserKey: Its public key must be filled first.")
+        self.master_key_cipher = encrypt_master_key(
+            master_key, self.public_key)
         self.save()
 
 
 @python_2_unicode_compatible
 class SessionKey(models.Model):
     """
-    A SessionKey stores a User's temporary key to be used for the encryption and decryption of secrets.
+    A SessionKey stores a User's temporary key to be used for the
+    encryption and decryption of secrets.
     """
-    userkey = models.OneToOneField(UserKey, related_name='session_key', on_delete=models.CASCADE, editable=False)
+    userkey = models.OneToOneField(
+        "UserKey", related_name='session_key',
+        on_delete=models.CASCADE, editable=False)
     cipher = models.BinaryField(max_length=512, editable=False)
     hash = models.CharField(max_length=128, editable=False)
     created = models.DateTimeField(auto_now_add=True)
@@ -188,7 +214,8 @@ class SessionKey(models.Model):
     def save(self, master_key=None, *args, **kwargs):
 
         if master_key is None:
-            raise Exception("The master key must be provided to save a session key.")
+            raise Exception(
+                "The master key must be provided to save a session key.")
 
         # Generate a random 256-bit session key if one is not already defined
         if self.key is None:
@@ -228,16 +255,21 @@ class SessionKey(models.Model):
 @python_2_unicode_compatible
 class SecretRole(models.Model):
     """
-    A SecretRole represents an arbitrary functional classification of Secrets. For example, a user might define roles
-    such as "Login Credentials" or "SNMP Communities."
+    A SecretRole represents an arbitrary functional classification of
+    Secrets. For example, a user might define roles such as "Login
+    Credentials" or "SNMP Communities."
 
-    By default, only superusers will have access to decrypt Secrets. To allow other users to decrypt Secrets, grant them
-    access to the appropriate SecretRoles either individually or by group.
+    By default, only superusers will have access to decrypt
+    Secrets. To allow other users to decrypt Secrets, grant them
+    access to the appropriate SecretRoles either individually or by
+    group.
     """
     name = models.CharField(max_length=50, unique=True)
     slug = models.SlugField(unique=True)
-    users = models.ManyToManyField(User, related_name='secretroles', blank=True)
-    groups = models.ManyToManyField(Group, related_name='secretroles', blank=True)
+    users = models.ManyToManyField(
+        User, related_name='secretroles', blank=True)
+    groups = models.ManyToManyField(
+        Group, related_name='secretroles', blank=True)
 
     csv_headers = ['name', 'slug']
 
@@ -258,7 +290,8 @@ class SecretRole(models.Model):
 
     def has_member(self, user):
         """
-        Check whether the given user has belongs to this SecretRole. Note that superusers belong to all roles.
+        Check whether the given user has belongs to this
+        SecretRole. Note that superusers belong to all roles.
         """
         if user.is_superuser:
             return True
@@ -268,21 +301,53 @@ class SecretRole(models.Model):
 @python_2_unicode_compatible
 class Secret(CreatedUpdatedModel):
     """
-    A Secret stores an AES256-encrypted copy of sensitive data, such as passwords or secret keys. An irreversible
-    SHA-256 hash is stored along with the ciphertext for validation upon decryption. Each Secret is assigned to a
-    Device; Devices may have multiple Secrets associated with them. A name can optionally be defined along with the
-    ciphertext; this string is stored as plain text in the database.
+    A Secret stores an AES256-encrypted copy of sensitive data, such
+    as passwords or secret keys. An irreversible SHA-256 hash is
+    stored along with the ciphertext for validation upon
+    decryption. Each Secret is assigned to a Device; Devices may have
+    multiple Secrets associated with them. A name can optionally be
+    defined along with the ciphertext; this string is stored as plain
+    text in the database.
 
-    A Secret can be up to 65,536 bytes (64KB) in length. Each secret string will be padded with random data to a minimum
-    of 64 bytes during encryption in order to protect short strings from ciphertext analysis.
+    A Secret can be up to 65,536 bytes (64KB) in length. Each secret
+    string will be padded with random data to a minimum of 64 bytes
+    during encryption in order to protect short strings from
+    ciphertext analysis.
     """
-    device = models.ForeignKey(Device, related_name='secrets', on_delete=models.CASCADE)
-    role = models.ForeignKey('SecretRole', related_name='secrets', on_delete=models.PROTECT)
-    name = models.CharField(max_length=100, blank=True)
-    ciphertext = models.BinaryField(editable=False, max_length=65568)  # 16B IV + 2B pad length + {62-65550}B padded
-    hash = models.CharField(max_length=128, editable=False)
+    device = models.ForeignKey(
+        "dcim.Device",
+        null=True, blank=True,
+        related_name='secrets',
+        on_delete=models.CASCADE)
+    virtual_machine = models.ForeignKey(
+        "virtualization.VirtualMachine",
+        null=True, blank=True,
+        related_name='secrets',
+        on_delete=models.CASCADE)
+    role = models.ForeignKey(
+        'SecretRole',
+        related_name='secrets',
+        on_delete=models.PROTECT)
 
+    # Secret can tie to an interface so we know which
+    # IP we can use this secret for.
+    interface = models.ForeignKey(
+        "dcim.Interface",
+        related_name="secrets",
+        null=True, blank=True,
+        on_delete=models.SET_NULL)
+
+    name = models.CharField(max_length=100, blank=True)
+    # 16B IV + 2B pad length + {62-65550}B padded
+    ciphertext = models.BinaryField(editable=False, max_length=65568)
+    hash = models.CharField(max_length=128, editable=False)
     plaintext = None
+
+    # TODO: save pwd in plaintext is a bad idea. We should look
+    # into using this secret properly. For POC, save the pwd here.
+    password = models.CharField(max_length=32,
+                                blank=True, null=True)
+
     csv_headers = ['device', 'role', 'name', 'plaintext']
 
     class Meta:
@@ -295,7 +360,8 @@ class Secret(CreatedUpdatedModel):
 
     def __str__(self):
         if self.role and self.device and self.name:
-            return '{} for {} ({})'.format(self.role, self.device, self.name)
+            return '{} for {} ({}/{})'.format(
+                self.role, self.device, self.name, self.password)
         # Return role and device if no name is set
         if self.role and self.device:
             return '{} for {}'.format(self.role, self.device)
@@ -306,7 +372,9 @@ class Secret(CreatedUpdatedModel):
 
     def _pad(self, s):
         """
-        Prepend the length of the plaintext (2B) and pad with garbage to a multiple of 16B (minimum of 64B).
+        Prepend the length of the plaintext (2B) and pad with garbage
+        to a multiple of 16B (minimum of 64B).
+
         +--+--------+-------------------------------------------+
         |LL|MySecret|xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx|
         +--+--------+-------------------------------------------+
@@ -330,8 +398,8 @@ class Secret(CreatedUpdatedModel):
 
     def _unpad(self, s):
         """
-        Consume the first two bytes of s as a plaintext length indicator and return only that many bytes as the
-        plaintext.
+        Consume the first two bytes of s as a plaintext length
+        indicator and return only that many bytes as the plaintext.
         """
         if isinstance(s[0], str):
             plaintext_length = (ord(s[0]) << 8) + ord(s[1])
@@ -341,9 +409,11 @@ class Secret(CreatedUpdatedModel):
 
     def encrypt(self, secret_key):
         """
-        Generate a random initialization vector (IV) for AES. Pad the plaintext to the AES block size (16 bytes) and
-        encrypt. Prepend the IV for use in decryption. Finally, record the SHA256 hash of the plaintext for validation
-        upon decryption.
+        Generate a random initialization vector (IV) for AES. Pad the
+        plaintext to the AES block size (16 bytes) and
+        encrypt. Prepend the IV for use in decryption. Finally, record
+        the SHA256 hash of the plaintext for validation upon
+        decryption.
         """
         if self.plaintext is None:
             raise Exception("Must unlock or set plaintext before locking.")
@@ -354,15 +424,18 @@ class Secret(CreatedUpdatedModel):
         self.ciphertext = iv + aes.encrypt(self._pad(self.plaintext))
 
         # Generate SHA256 using Django's built-in password hashing mechanism
-        self.hash = make_password(self.plaintext, hasher=SecretValidationHasher())
+        self.hash = make_password(
+            self.plaintext, hasher=SecretValidationHasher())
 
         self.plaintext = None
 
     def decrypt(self, secret_key):
         """
-        Consume the first 16 bytes of self.ciphertext as the AES initialization vector (IV). The remainder is decrypted
-        using the IV and the provided secret key. Padding is then removed to reveal the plaintext. Finally, validate the
-        decrypted plaintext value against the stored hash.
+        Consume the first 16 bytes of self.ciphertext as the AES
+        initialization vector (IV). The remainder is decrypted using
+        the IV and the provided secret key. Padding is then removed to
+        reveal the plaintext. Finally, validate the decrypted
+        plaintext value against the stored hash.
         """
         if self.plaintext is not None:
             return

@@ -99,14 +99,16 @@ class TopologyMapViewSet(ModelViewSet):
 
         try:
             data = tmap.render(img_format=img_format)
-        except Exception:
+        except:
             return HttpResponse(
                 "There was an error generating the requested graph. Ensure that the GraphViz executables have been "
                 "installed correctly."
             )
 
-        response = HttpResponse(data, content_type='image/{}'.format(img_format))
-        response['Content-Disposition'] = 'inline; filename="{}.{}"'.format(tmap.slug, img_format)
+        response = HttpResponse(
+            data, content_type='image/{}'.format(img_format))
+        response['Content-Disposition'] = 'inline; filename="{}.{}"'.format(
+            tmap.slug, img_format)
 
         return response
 
@@ -156,7 +158,8 @@ class ReportViewSet(ViewSet):
             for report in reports:
 
                 # Attach the relevant ReportResult (if any) to each Report.
-                report.result = ReportResult.objects.filter(report=report.full_name).defer('data').first()
+                report.result = ReportResult.objects.filter(
+                    report=report.full_name).defer('data').first()
                 report_list.append(report)
 
         serializer = serializers.ReportSerializer(report_list, many=True, context={
@@ -172,7 +175,8 @@ class ReportViewSet(ViewSet):
 
         # Retrieve the Report and ReportResult, if any.
         report = self._retrieve_report(pk)
-        report.result = ReportResult.objects.filter(report=report.full_name).first()
+        report.result = ReportResult.objects.filter(
+            report=report.full_name).first()
 
         serializer = serializers.ReportDetailSerializer(report)
 
@@ -186,7 +190,8 @@ class ReportViewSet(ViewSet):
 
         # Check that the user has permission to run reports.
         if not request.user.has_perm('extras.add_reportresult'):
-            raise PermissionDenied("This user does not have permission to run reports.")
+            raise PermissionDenied(
+                "This user does not have permission to run reports.")
 
         # Retrieve and run the Report. This will create a new ReportResult.
         report = self._retrieve_report(pk)

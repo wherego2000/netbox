@@ -115,7 +115,7 @@ class ClusterView(View):
             'site', 'rack', 'tenant', 'device_type__manufacturer'
         )
         device_table = DeviceTable(list(devices), orderable=False)
-        if request.user.has_perm('virtualization.change_cluster'):
+        if request.user.has_perm('virtualization:change_cluster'):
             device_table.columns.show('pk')
 
         return render(request, 'virtualization/cluster.html', {
@@ -160,7 +160,6 @@ class ClusterBulkDeleteView(PermissionRequiredMixin, BulkDeleteView):
     permission_required = 'virtualization.delete_cluster'
     cls = Cluster
     queryset = Cluster.objects.all()
-    filter = filters.ClusterFilter
     table = tables.ClusterTable
     default_return_url = 'virtualization:cluster_list'
 
@@ -246,7 +245,8 @@ class ClusterRemoveDevicesView(PermissionRequiredMixin, View):
 #
 
 class VirtualMachineListView(ObjectListView):
-    queryset = VirtualMachine.objects.select_related('cluster', 'tenant', 'primary_ip4', 'primary_ip6')
+    queryset = VirtualMachine.objects.select_related(
+        'cluster', 'tenant', 'primary_ip4', 'primary_ip6')
     filter = filters.VirtualMachineFilter
     filter_form = forms.VirtualMachineFilterForm
     table = tables.VirtualMachineDetailTable
@@ -257,7 +257,8 @@ class VirtualMachineView(View):
 
     def get(self, request, pk):
 
-        vm = get_object_or_404(VirtualMachine.objects.select_related('tenant__group'), pk=pk)
+        vm = get_object_or_404(
+            VirtualMachine.objects.select_related('tenant__group'), pk=pk)
         interfaces = Interface.objects.filter(virtual_machine=vm)
         services = Service.objects.filter(virtual_machine=vm)
 

@@ -18,7 +18,8 @@ class RPCClient(object):
         try:
             self.host = str(device.primary_ip.address.ip)
         except AttributeError:
-            raise Exception("Specified device ({}) does not have a primary IP defined.".format(device))
+            raise Exception(
+                "Specified device ({}) does not have a primary IP defined.".format(device))
 
     def get_inventory(self):
         """
@@ -114,7 +115,8 @@ class JunosNC(RPCClient):
 
         def glean_items(node, depth=0):
             items = []
-            items_list = node.get('chassis{}-module'.format('-sub' * depth), [])
+            items_list = node.get(
+                'chassis{}-module'.format('-sub' * depth), [])
             # Junos like to return single children directly instead of as a single-item list
             if hasattr(items_list, 'items'):
                 items_list = [items_list]
@@ -131,7 +133,8 @@ class JunosNC(RPCClient):
             return items
 
         rpc_reply = self.manager.dispatch('get-chassis-inventory')
-        inventory_raw = xmltodict.parse(rpc_reply.xml)['rpc-reply']['chassis-inventory']['chassis']
+        inventory_raw = xmltodict.parse(rpc_reply.xml)[
+            'rpc-reply']['chassis-inventory']['chassis']
 
         result = dict()
 
@@ -163,8 +166,8 @@ class IOSSSH(SSHClient):
 
             sh_ver = self._send('show version').split('\r\n')
             return {
-                'serial': parse(sh_ver, r'Processor board ID ([^\s]+)'),
-                'description': parse(sh_ver, r'cisco ([^\s]+)')
+                'serial': parse(sh_ver, 'Processor board ID ([^\s]+)'),
+                'description': parse(sh_ver, 'cisco ([^\s]+)')
             }
 
         def items(chassis_serial=None):
@@ -172,9 +175,9 @@ class IOSSSH(SSHClient):
             for i in cmd:
                 i_fmt = i.replace('\r\n', ' ')
                 try:
-                    m_name = re.search(r'NAME: "([^"]+)"', i_fmt).group(1)
-                    m_pid = re.search(r'PID: ([^\s]+)', i_fmt).group(1)
-                    m_serial = re.search(r'SN: ([^\s]+)', i_fmt).group(1)
+                    m_name = re.search('NAME: "([^"]+)"', i_fmt).group(1)
+                    m_pid = re.search('PID: ([^\s]+)', i_fmt).group(1)
+                    m_serial = re.search('SN: ([^\s]+)', i_fmt).group(1)
                     # Omit built-in items and those with no PID
                     if m_serial != chassis_serial and m_pid.lower() != 'unspecified':
                         yield {
@@ -208,17 +211,19 @@ class OpengearSSH(SSHClient):
         try:
             stdin, stdout, stderr = self.ssh.exec_command("showserial")
             serial = stdout.readlines()[0].strip()
-        except Exception:
+        except:
             raise RuntimeError("Failed to glean chassis serial from device.")
         # Older models don't provide serial info
         if serial == "No serial number information available":
             serial = ''
 
         try:
-            stdin, stdout, stderr = self.ssh.exec_command("config -g config.system.model")
+            stdin, stdout, stderr = self.ssh.exec_command(
+                "config -g config.system.model")
             description = stdout.readlines()[0].split(' ', 1)[1].strip()
-        except Exception:
-            raise RuntimeError("Failed to glean chassis description from device.")
+        except:
+            raise RuntimeError(
+                "Failed to glean chassis description from device.")
 
         return {
             'chassis': {

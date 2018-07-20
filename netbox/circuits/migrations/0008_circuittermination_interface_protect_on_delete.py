@@ -16,6 +16,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='circuittermination',
             name='interface',
-            field=models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='circuit_termination', to='dcim.Interface'),
+            field=models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT,
+                                       related_name='circuit_termination', to='dcim.Interface'),
         ),
     ]

@@ -1,0 +1,94 @@
+{% extends '_base.html' %}
+{% load static from staticfiles %}
+{% load helpers %}
+
+{% block title %}{{ item }}{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <strong>Inventory Item</strong>
+    </div>
+    <table class="table table-hover panel-body attr-table">
+      <tr>
+        <td>Name</td>
+        <td>{{ item.name }}</td>
+      </tr>
+      <tr>
+        <td>Rack</td>
+        <td>
+          {% if item.device.rack %}
+          <a href="{% url 'dcim:rack' item.device.rack.id %}">
+            {{ item.device.rack}}
+          </a>
+          {% endif %}
+        </td>
+      </tr>
+      <tr>
+        <td>Device</td>
+        <td>
+          {% if item.device %}
+          <a href="{% url 'dcim:device' item.device.id %}">
+            {{ item.device.name}}
+          </a>
+          {% endif %}
+        </td>
+      </tr>
+      <tr>
+        <td>Parent</td>
+        <td>
+          {% if item.parent %}
+          <a href="{% url 'dcim:inventoryitem' item.parent.id %}">
+            {{ item.parent }}
+          </a>
+          {% else %}
+          &mdash;
+          {% endif %}
+        </td>
+      </tr>
+      <tr>
+        <td>Manufacturer</td>
+        <td>
+          {{ item.manufacturer }}
+        </td>
+      </tr>
+      <tr>
+        <td>Device Type</td>
+        <td>
+          <a href="{% url 'dcim:devicetype' item.device_type.id %}">
+            {{ item.device_type.model }}
+          </a>
+        </td>
+      </tr>
+      <tr>
+        <td>Part No.</td>
+        <td>{{ item.part_id }}</td>
+      </tr>
+      <tr>
+        <td>Serial No.</td>
+        <td> {{ item.serial }}</td>
+      </tr>
+      <tr>
+        <td>Asset Tag</td>
+        <td>{{ item.asset_tag }}</td>
+      </tr>
+      <tr>
+        <td>Is discovered?</td>
+        <td>{{ item.discovered }}</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <strong>Description</strong>
+    </div>
+    <div class="panel-body">
+      {{ item.description|safe }}
+    </div>
+  </div>
+</div>
+
+
+{% endblock %}

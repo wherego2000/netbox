@@ -18,14 +18,17 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='ImageAttachment',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.AutoField(auto_created=True,
+                                        primary_key=True, serialize=False, verbose_name='ID')),
                 ('object_id', models.PositiveIntegerField()),
-                ('image', models.ImageField(height_field=b'image_height', upload_to=extras.models.image_upload, width_field=b'image_width')),
+                ('image', models.ImageField(height_field=b'image_height',
+                                            upload_to=extras.models.image_upload, width_field=b'image_width')),
                 ('image_height', models.PositiveSmallIntegerField()),
                 ('image_width', models.PositiveSmallIntegerField()),
                 ('name', models.CharField(blank=True, max_length=50)),
                 ('created', models.DateTimeField(auto_now_add=True)),
-                ('content_type', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='contenttypes.ContentType')),
+                ('content_type', models.ForeignKey(
+                    on_delete=django.db.models.deletion.CASCADE, to='contenttypes.ContentType')),
             ],
             options={
                 'ordering': ['name'],

@@ -150,7 +150,8 @@ class CircuitView(View):
 
     def get(self, request, pk):
 
-        circuit = get_object_or_404(Circuit.objects.select_related('provider', 'type', 'tenant__group'), pk=pk)
+        circuit = get_object_or_404(Circuit.objects.select_related(
+            'provider', 'type', 'tenant__group'), pk=pk)
         termination_a = CircuitTermination.objects.select_related(
             'site__region', 'interface__device'
         ).filter(
@@ -197,7 +198,8 @@ class CircuitBulkImportView(PermissionRequiredMixin, BulkImportView):
 class CircuitBulkEditView(PermissionRequiredMixin, BulkEditView):
     permission_required = 'circuits.change_circuit'
     cls = Circuit
-    queryset = Circuit.objects.select_related('provider', 'type', 'tenant').prefetch_related('terminations__site')
+    queryset = Circuit.objects.select_related(
+        'provider', 'type', 'tenant').prefetch_related('terminations__site')
     filter = filters.CircuitFilter
     table = tables.CircuitTable
     form = forms.CircuitBulkEditForm
@@ -207,7 +209,8 @@ class CircuitBulkEditView(PermissionRequiredMixin, BulkEditView):
 class CircuitBulkDeleteView(PermissionRequiredMixin, BulkDeleteView):
     permission_required = 'circuits.delete_circuit'
     cls = Circuit
-    queryset = Circuit.objects.select_related('provider', 'type', 'tenant').prefetch_related('terminations__site')
+    queryset = Circuit.objects.select_related(
+        'provider', 'type', 'tenant').prefetch_related('terminations__site')
     filter = filters.CircuitFilter
     table = tables.CircuitTable
     default_return_url = 'circuits:circuit_list'
@@ -217,10 +220,13 @@ class CircuitBulkDeleteView(PermissionRequiredMixin, BulkDeleteView):
 def circuit_terminations_swap(request, pk):
 
     circuit = get_object_or_404(Circuit, pk=pk)
-    termination_a = CircuitTermination.objects.filter(circuit=circuit, term_side=TERM_SIDE_A).first()
-    termination_z = CircuitTermination.objects.filter(circuit=circuit, term_side=TERM_SIDE_Z).first()
+    termination_a = CircuitTermination.objects.filter(
+        circuit=circuit, term_side=TERM_SIDE_A).first()
+    termination_z = CircuitTermination.objects.filter(
+        circuit=circuit, term_side=TERM_SIDE_Z).first()
     if not termination_a and not termination_z:
-        messages.error(request, "No terminations have been defined for circuit {}.".format(circuit))
+        messages.error(
+            request, "No terminations have been defined for circuit {}.".format(circuit))
         return redirect('circuits:circuit', pk=circuit.pk)
 
     if request.method == 'POST':
@@ -241,7 +247,8 @@ def circuit_terminations_swap(request, pk):
             else:
                 termination_z.term_side = 'A'
                 termination_z.save()
-            messages.success(request, "Swapped terminations for circuit {}.".format(circuit))
+            messages.success(
+                request, "Swapped terminations for circuit {}.".format(circuit))
             return redirect('circuits:circuit', pk=circuit.pk)
 
     else:

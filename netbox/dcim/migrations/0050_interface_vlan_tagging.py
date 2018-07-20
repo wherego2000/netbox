@@ -17,16 +17,19 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='interface',
             name='mode',
-            field=models.PositiveSmallIntegerField(blank=True, choices=[[100, 'Access'], [200, 'Tagged'], [300, 'Tagged All']], null=True),
+            field=models.PositiveSmallIntegerField(blank=True, choices=[[100, 'Access'], [
+                                                   200, 'Tagged'], [300, 'Tagged All']], null=True),
         ),
         migrations.AddField(
             model_name='interface',
             name='tagged_vlans',
-            field=models.ManyToManyField(blank=True, related_name='interfaces_as_tagged', to='ipam.VLAN', verbose_name='Tagged VLANs'),
+            field=models.ManyToManyField(
+                blank=True, related_name='interfaces_as_tagged', to='ipam.VLAN', verbose_name='Tagged VLANs'),
         ),
         migrations.AddField(
             model_name='interface',
             name='untagged_vlan',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='interfaces_as_untagged', to='ipam.VLAN', verbose_name='Untagged VLAN'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE,
+                                    related_name='interfaces_as_untagged', to='ipam.VLAN', verbose_name='Untagged VLAN'),
         ),
     ]

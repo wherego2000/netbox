@@ -7,10 +7,17 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
-from django.db import transaction, IntegrityError
+from django.db import IntegrityError
+from django.db import transaction
 from django.db.models import ProtectedError
-from django.forms import CharField, Form, ModelMultipleChoiceField, MultipleHiddenInput, Textarea
-from django.shortcuts import get_object_or_404, redirect, render
+from django.forms import CharField
+from django.forms import Form
+from django.forms import ModelMultipleChoiceField
+from django.forms import MultipleHiddenInput
+from django.forms import Textarea
+from django.shortcuts import get_object_or_404
+from django.shortcuts import redirect
+from django.shortcuts import render
 from django.template.exceptions import TemplateSyntaxError
 from django.urls import reverse
 from django.utils.html import escape
@@ -18,10 +25,15 @@ from django.utils.http import is_safe_url
 from django.utils.safestring import mark_safe
 from django.views.generic import View
 from django_tables2 import RequestConfig
+from extras.models import CustomField
+from extras.models import CustomFieldValue
+from extras.models import ExportTemplate
+from extras.models import UserAction
 
-from extras.models import CustomField, CustomFieldValue, ExportTemplate, UserAction
+from utilities.forms import BootstrapMixin
+from utilities.forms import CSVDataField
 from utilities.utils import queryset_to_csv
-from utilities.forms import BootstrapMixin, CSVDataField
+
 from .constants import M2M_FIELD_TYPES
 from .error_handlers import handle_protectederror
 from .forms import ConfirmationForm
@@ -40,14 +52,17 @@ class CustomFieldQueryset:
 
     def __iter__(self):
         for obj in self.queryset:
-            values_dict = {cfv.field_id: cfv.value for cfv in obj.custom_field_values.all()}
-            obj.custom_fields = OrderedDict([(field, values_dict.get(field.pk)) for field in self.custom_fields])
+            values_dict = {
+                cfv.field_id: cfv.value for cfv in obj.custom_field_values.all()}
+            obj.custom_fields = OrderedDict(
+                [(field, values_dict.get(field.pk)) for field in self.custom_fields])
             yield obj
 
 
 class GetReturnURLMixin(object):
     """
-    Provides logic for determining where a user should be redirected after processing a form.
+    Provides logic for determining where a user should be redirected
+    after processing a form.
     """
     default_return_url = None
 
@@ -86,33 +101,41 @@ class ObjectListView(View):
         if self.filter:
             self.queryset = self.filter(request.GET, self.queryset).qs
 
-        # If this type of object has one or more custom fields, prefetch any relevant custom field values
+        # If this type of object has one or more custom fields, prefetch any
+        # relevant custom field values
         custom_fields = CustomField.objects.filter(obj_type=ContentType.objects.get_for_model(model))\
             .prefetch_related('choices')
         if custom_fields:
-            self.queryset = self.queryset.prefetch_related('custom_field_values')
+            self.queryset = self.queryset.prefetch_related(
+                'custom_field_values')
 
         # Check for export template rendering
         if request.GET.get('export'):
-            et = get_object_or_404(ExportTemplate, content_type=content_type, name=request.GET.get('export'))
-            queryset = CustomFieldQueryset(self.queryset, custom_fields) if custom_fields else self.queryset
+            et = get_object_or_404(
+                ExportTemplate, content_type=content_type, name=request.GET.get('export'))
+            queryset = CustomFieldQueryset(
+                self.queryset, custom_fields) if custom_fields else self.queryset
             try:
                 return et.render_to_response(queryset)
             except TemplateSyntaxError:
                 messages.error(
                     request,
-                    "There was an error rendering the selected export template ({}).".format(et.name)
+                    "There was an error rendering the selected export template ({}).".format(
+                        et.name)
                 )
         # Fall back to built-in CSV export if no template was specified
         elif 'export' in request.GET and hasattr(model, 'to_csv'):
             return queryset_to_csv(self.queryset)
 
-        # Provide a hook to tweak the queryset based on the request immediately prior to rendering the object list
+        # Provide a hook to tweak the queryset based on the request immediately
+        # prior to rendering the object list
         self.queryset = self.alter_queryset(request)
 
         # Compile user model permissions for access from within the template
-        perm_base_name = '{}.{{}}_{}'.format(model._meta.app_label, model._meta.model_name)
-        permissions = {p: request.user.has_perm(perm_base_name.format(p)) for p in ['add', 'change', 'delete']}
+        perm_base_name = '{}.{{}}_{}'.format(
+            model._meta.app_label, model._meta.model_name)
+        permissions = {p: request.user.has_perm(perm_base_name.format(p)) for p in [
+            'add', 'change', 'delete']}
 
         # Construct the table based on the user's permissions
         table = self.table(self.queryset)
@@ -198,7 +221,8 @@ class ObjectEditView(GetReturnURLMixin, View):
             msg = 'Created ' if obj_created else 'Modified '
             msg += self.model._meta.verbose_name
             if hasattr(obj, 'get_absolute_url'):
-                msg = '{} <a href="{}">{}</a>'.format(msg, obj.get_absolute_url(), escape(obj))
+                msg = '{} <a href="{}">{}</a>'.format(
+                    msg, obj.get_absolute_url(), escape(obj))
             else:
                 msg = '{} {}'.format(msg, escape(obj))
             messages.success(request, mark_safe(msg))
@@ -331,11 +355,14 @@ class BulkCreateView(View):
             try:
                 with transaction.atomic():
 
-                    # Create objects from the expanded. Abort the transaction on the first validation error.
+                    # Create objects from the expanded. Abort the
+                    # transaction on the first validation error.
                     for value in pattern:
 
-                        # Reinstantiate the model form each time to avoid overwriting the same instance. Use a mutable
-                        # copy of the POST QueryDict so that we can update the target field value.
+                        # Reinstantiate the model form each time to
+                        # avoid overwriting the same instance. Use a
+                        # mutable copy of the POST QueryDict so that
+                        # we can update the target field value.
                         model_form = self.model_form(request.POST.copy())
                         model_form.data[self.pattern_target] = value
 
@@ -344,17 +371,23 @@ class BulkCreateView(View):
                             obj = model_form.save()
                             new_objs.append(obj)
                         else:
-                            # Copy any errors on the pattern target field to the pattern form.
+                            # Copy any errors on the pattern target
+                            # field to the pattern form.
                             errors = model_form.errors.as_data()
                             if errors.get(self.pattern_target):
-                                form.add_error('pattern', errors[self.pattern_target])
-                            # Raise an IntegrityError to break the for loop and abort the transaction.
+                                form.add_error(
+                                    'pattern', errors[self.pattern_target])
+                            # Raise an IntegrityError to break the for
+                            # loop and abort the transaction.
                             raise IntegrityError()
 
-                    # If we make it to this point, validation has succeeded on all new objects.
-                    msg = "Added {} {}".format(len(new_objs), model._meta.verbose_name_plural)
+                    # If we make it to this point, validation has
+                    # succeeded on all new objects.
+                    msg = "Added {} {}".format(
+                        len(new_objs), model._meta.verbose_name_plural)
                     messages.success(request, msg)
-                    UserAction.objects.log_bulk_create(request.user, ContentType.objects.get_for_model(model), msg)
+                    UserAction.objects.log_bulk_create(
+                        request.user, ContentType.objects.get_for_model(model), msg)
 
                     if '_addanother' in request.POST:
                         return redirect(request.path)
@@ -390,16 +423,19 @@ class BulkImportView(View):
     def _import_form(self, *args, **kwargs):
 
         fields = self.model_form().fields.keys()
-        required_fields = [name for name, field in self.model_form().fields.items() if field.required]
+        required_fields = [
+            name for name, field in self.model_form().fields.items() if field.required]
 
         class ImportForm(BootstrapMixin, Form):
-            csv = CSVDataField(fields=fields, required_fields=required_fields, widget=Textarea(attrs=self.widget_attrs))
+            csv = CSVDataField(fields=fields, required_fields=required_fields, widget=Textarea(
+                attrs=self.widget_attrs))
 
         return ImportForm(*args, **kwargs)
 
     def _save_obj(self, obj_form):
         """
-        Provide a hook to modify the object immediately before saving it (e.g. to encrypt secret data).
+        Provide a hook to modify the object immediately before saving it
+        (e.g. to encrypt secret data).
         """
         return obj_form.save()
 
@@ -421,7 +457,8 @@ class BulkImportView(View):
 
             try:
 
-                # Iterate through CSV data and bind each row to a new model form instance.
+                # Iterate through CSV data and bind each row to a new
+                # model form instance.
                 with transaction.atomic():
                     for row, data in enumerate(form.cleaned_data['csv'], start=1):
                         obj_form = self.model_form(data)
@@ -430,16 +467,19 @@ class BulkImportView(View):
                             new_objs.append(obj)
                         else:
                             for field, err in obj_form.errors.items():
-                                form.add_error('csv', "Row {} {}: {}".format(row, field, err[0]))
+                                form.add_error(
+                                    'csv', "Row {} {}: {}".format(row, field, err[0]))
                             raise ValidationError("")
 
                 # Compile a table containing the imported objects
                 obj_table = self.table(new_objs)
 
                 if new_objs:
-                    msg = 'Imported {} {}'.format(len(new_objs), new_objs[0]._meta.verbose_name_plural)
+                    msg = 'Imported {} {}'.format(
+                        len(new_objs), new_objs[0]._meta.verbose_name_plural)
                     messages.success(request, msg)
-                    UserAction.objects.log_import(request.user, ContentType.objects.get_for_model(new_objs[0]), msg)
+                    UserAction.objects.log_import(
+                        request.user, ContentType.objects.get_for_model(new_objs[0]), msg)
 
                     return render(request, "import_success.html", {
                         'table': obj_table,
@@ -485,7 +525,8 @@ class BulkEditView(View):
 
     def post(self, request, **kwargs):
 
-        # Attempt to derive parent object if a parent class has been given
+        # Attempt to derive parent object if a parent class has been
+        # given
         if self.parent_cls:
             parent_obj = get_object_or_404(self.parent_cls, **kwargs)
         else:
@@ -500,9 +541,11 @@ class BulkEditView(View):
         else:
             return_url = reverse(self.default_return_url)
 
-        # Are we editing *all* objects in the queryset or just a selected subset?
+        # Are we editing *all* objects in the queryset or just a
+        # selected subset?
         if request.POST.get('_all') and self.filter is not None:
-            pk_list = [obj.pk for obj in self.filter(request.GET, self.cls.objects.only('pk')).qs]
+            pk_list = [obj.pk for obj in self.filter(
+                request.GET, self.cls.objects.only('pk')).qs]
         else:
             pk_list = [int(pk) for pk in request.POST.getlist('pk')]
 
@@ -510,8 +553,10 @@ class BulkEditView(View):
             form = self.form(self.cls, parent_obj, request.POST)
             if form.is_valid():
 
-                custom_fields = form.custom_fields if hasattr(form, 'custom_fields') else []
-                standard_fields = [field for field in form.fields if field not in custom_fields and field != 'pk']
+                custom_fields = form.custom_fields if hasattr(
+                    form, 'custom_fields') else []
+                standard_fields = [
+                    field for field in form.fields if field not in custom_fields and field != 'pk']
                 nullified_fields = request.POST.getlist('_nullify')
 
                 try:
@@ -521,17 +566,20 @@ class BulkEditView(View):
                         updated_count = 0
                         for obj in self.cls.objects.filter(pk__in=pk_list):
 
-                            # Update standard fields. If a field is listed in _nullify, delete its value.
+                            # Update standard fields. If a field is
+                            # listed in _nullify, delete its value.
                             for name in standard_fields:
                                 if name in form.nullable_fields and name in nullified_fields:
-                                    setattr(obj, name, '' if isinstance(form.fields[name], CharField) else None)
+                                    setattr(obj, name, '' if isinstance(
+                                        form.fields[name], CharField) else None)
                                 elif form.cleaned_data[name] not in (None, ''):
                                     setattr(obj, name, form.cleaned_data[name])
                             obj.full_clean()
                             obj.save()
 
                             # Update custom fields
-                            obj_type = ContentType.objects.get_for_model(self.cls)
+                            obj_type = ContentType.objects.get_for_model(
+                                self.cls)
                             for name in custom_fields:
                                 field = form.fields[name].model
                                 if name in form.nullable_fields and name in nullified_fields:
@@ -553,14 +601,17 @@ class BulkEditView(View):
                             updated_count += 1
 
                     if updated_count:
-                        msg = 'Updated {} {}'.format(updated_count, self.cls._meta.verbose_name_plural)
+                        msg = 'Updated {} {}'.format(
+                            updated_count, self.cls._meta.verbose_name_plural)
                         messages.success(self.request, msg)
-                        UserAction.objects.log_bulk_edit(request.user, ContentType.objects.get_for_model(self.cls), msg)
+                        UserAction.objects.log_bulk_edit(
+                            request.user, ContentType.objects.get_for_model(self.cls), msg)
 
                     return redirect(return_url)
 
                 except ValidationError as e:
-                    messages.error(self.request, "{} failed validation: {}".format(obj, e))
+                    messages.error(
+                        self.request, "{} failed validation: {}".format(obj, e))
 
         else:
             initial_data = request.POST.copy()
@@ -571,7 +622,8 @@ class BulkEditView(View):
         queryset = self.queryset or self.cls.objects.all()
         table = self.table(queryset.filter(pk__in=pk_list), orderable=False)
         if not table.rows:
-            messages.warning(request, "No {} were selected.".format(self.cls._meta.verbose_name_plural))
+            messages.warning(request, "No {} were selected.".format(
+                self.cls._meta.verbose_name_plural))
             return redirect(return_url)
 
         return render(request, self.template_name, {
@@ -610,7 +662,8 @@ class BulkDeleteView(View):
 
     def post(self, request, **kwargs):
 
-        # Attempt to derive parent object if a parent class has been given
+        # Attempt to derive parent object if a parent class has been
+        # given
         if self.parent_cls:
             parent_obj = get_object_or_404(self.parent_cls, **kwargs)
         else:
@@ -625,12 +678,11 @@ class BulkDeleteView(View):
         else:
             return_url = reverse(self.default_return_url)
 
-        # Are we deleting *all* objects in the queryset or just a selected subset?
-        if request.POST.get('_all'):
-            if self.filter is not None:
-                pk_list = [obj.pk for obj in self.filter(request.GET, self.cls.objects.only('pk')).qs]
-            else:
-                pk_list = self.cls.objects.values_list('pk', flat=True)
+        # Are we deleting *all* objects in the queryset or just a
+        # selected subset?
+        if request.POST.get('_all') and self.filter is not None:
+            pk_list = [obj.pk for obj in self.filter(
+                request.GET, self.cls.objects.only('pk')).qs]
         else:
             pk_list = [int(pk) for pk in request.POST.getlist('pk')]
 
@@ -648,9 +700,11 @@ class BulkDeleteView(View):
                     handle_protectederror(list(queryset), request, e)
                     return redirect(return_url)
 
-                msg = 'Deleted {} {}'.format(deleted_count, self.cls._meta.verbose_name_plural)
+                msg = 'Deleted {} {}'.format(
+                    deleted_count, self.cls._meta.verbose_name_plural)
                 messages.success(request, msg)
-                UserAction.objects.log_bulk_delete(request.user, ContentType.objects.get_for_model(self.cls), msg)
+                UserAction.objects.log_bulk_delete(
+                    request.user, ContentType.objects.get_for_model(self.cls), msg)
                 return redirect(return_url)
 
         else:
@@ -660,7 +714,8 @@ class BulkDeleteView(View):
         queryset = self.queryset or self.cls.objects.all()
         table = self.table(queryset.filter(pk__in=pk_list), orderable=False)
         if not table.rows:
-            messages.warning(request, "No {} were selected for deletion.".format(self.cls._meta.verbose_name_plural))
+            messages.warning(request, "No {} were selected for deletion.".format(
+                self.cls._meta.verbose_name_plural))
             return redirect(return_url)
 
         return render(request, self.template_name, {
@@ -677,7 +732,8 @@ class BulkDeleteView(View):
         """
 
         class BulkDeleteForm(ConfirmationForm):
-            pk = ModelMultipleChoiceField(queryset=self.cls.objects.all(), widget=MultipleHiddenInput)
+            pk = ModelMultipleChoiceField(
+                queryset=self.cls.objects.all(), widget=MultipleHiddenInput)
 
         if self.form:
             return self.form
@@ -690,7 +746,8 @@ class BulkDeleteView(View):
 
 class ComponentCreateView(View):
     """
-    Add one or more components (e.g. interfaces, console ports, etc.) to a Device or VirtualMachine.
+    Add one or more components (e.g. interfaces, console ports, etc.)
+    to a Device or VirtualMachine.
     """
     parent_model = None
     parent_field = None
@@ -726,7 +783,8 @@ class ComponentCreateView(View):
                     self.parent_field: parent.pk,
                     'name': name,
                 }
-                # Replace objects with their primary key to keep component_form.clean() happy
+                # Replace objects with their primary key to keep
+                # component_form.clean() happy
                 for k, v in data.items():
                     if hasattr(v, 'pk'):
                         component_data[k] = v.pk
@@ -737,23 +795,28 @@ class ComponentCreateView(View):
                     new_components.append(component_form.save(commit=False))
                 else:
                     for field, errors in component_form.errors.as_data().items():
-                        # Assign errors on the child form's name field to name_pattern on the parent form
+                        # Assign errors on the child form's name field
+                        # to name_pattern on the parent form
                         if field == 'name':
                             field = 'name_pattern'
                         for e in errors:
-                            form.add_error(field, '{}: {}'.format(name, ', '.join(e)))
+                            form.add_error(
+                                field, '{}: {}'.format(name, ', '.join(e)))
 
             if not form.errors:
                 self.model.objects.bulk_create(new_components)
 
-                # ManyToMany relations are bulk created via the through model
-                m2m_fields = [field for field in component_form.fields if type(component_form.fields[field]) in M2M_FIELD_TYPES]
+                # ManyToMany relations are bulk created via the
+                # through model
+                m2m_fields = [field for field in component_form.fields if type(
+                    component_form.fields[field]) in M2M_FIELD_TYPES]
                 if m2m_fields:
                     for field in m2m_fields:
                         field_links = []
                         for new_component in new_components:
                             for related_obj in component_form.cleaned_data[field]:
-                                # The through model columns are the id's of our M2M relation objects
+                                # The through model columns are the
+                                # id's of our M2M relation objects
                                 through_kwargs = {}
                                 new_component_column = new_component.__class__.__name__ + '_id'
                                 related_obj_column = related_obj.__class__.__name__ + '_id'
@@ -761,9 +824,11 @@ class ComponentCreateView(View):
                                     new_component_column.lower(): new_component.id,
                                     related_obj_column.lower(): related_obj.id
                                 })
-                                field_link = getattr(self.model, field).through(**through_kwargs)
+                                field_link = getattr(
+                                    self.model, field).through(**through_kwargs)
                                 field_links.append(field_link)
-                        getattr(self.model, field).through.objects.bulk_create(field_links)
+                        getattr(self.model, field).through.objects.bulk_create(
+                            field_links)
 
                 messages.success(request, "Added {} {} to {}.".format(
                     len(new_components), self.model._meta.verbose_name_plural, parent
@@ -783,7 +848,8 @@ class ComponentCreateView(View):
 
 class BulkComponentCreateView(View):
     """
-    Add one or more components (e.g. interfaces, console ports, etc.) to a set of Devices or VirtualMachines.
+    Add one or more components (e.g. interfaces, console ports, etc.)
+    to a set of Devices or VirtualMachines.
     """
     parent_model = None
     parent_field = None
@@ -797,9 +863,11 @@ class BulkComponentCreateView(View):
 
     def post(self, request):
 
-        # Are we editing *all* objects in the queryset or just a selected subset?
+        # Are we editing *all* objects in the queryset or just a
+        # selected subset?
         if request.POST.get('_all') and self.filter is not None:
-            pk_list = [obj.pk for obj in self.filter(request.GET, self.model.objects.only('pk')).qs]
+            pk_list = [obj.pk for obj in self.filter(
+                request.GET, self.model.objects.only('pk')).qs]
         else:
             pk_list = [int(pk) for pk in request.POST.getlist('pk')]
 
@@ -812,7 +880,8 @@ class BulkComponentCreateView(View):
 
         selected_objects = self.parent_model.objects.filter(pk__in=pk_list)
         if not selected_objects:
-            messages.warning(request, "No {} were selected.".format(self.parent_model._meta.verbose_name_plural))
+            messages.warning(request, "No {} were selected.".format(
+                self.parent_model._meta.verbose_name_plural))
             return redirect(return_url)
         table = self.table(selected_objects)
 
@@ -833,11 +902,13 @@ class BulkComponentCreateView(View):
                         component_data.update(data)
                         component_form = self.model_form(component_data)
                         if component_form.is_valid():
-                            new_components.append(component_form.save(commit=False))
+                            new_components.append(
+                                component_form.save(commit=False))
                         else:
                             for field, errors in component_form.errors.as_data().items():
                                 for e in errors:
-                                    form.add_error(field, '{} {}: {}'.format(obj, name, ', '.join(e)))
+                                    form.add_error(field, '{} {}: {}'.format(
+                                        obj, name, ', '.join(e)))
 
                 if not form.errors:
                     self.model.objects.bulk_create(new_components)

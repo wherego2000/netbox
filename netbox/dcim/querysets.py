@@ -3,23 +3,29 @@ from __future__ import unicode_literals
 from django.db.models import QuerySet
 from django.db.models.expressions import RawSQL
 
-from .constants import IFACE_ORDERING_NAME, IFACE_ORDERING_POSITION, NONCONNECTABLE_IFACE_TYPES
+from .constants import IFACE_ORDERING_NAME
+from .constants import IFACE_ORDERING_POSITION
+from .constants import NONCONNECTABLE_IFACE_TYPES
 
 
 class InterfaceQuerySet(QuerySet):
 
     def order_naturally(self, method=IFACE_ORDERING_POSITION):
         """
-        Naturally order interfaces by their type and numeric position. The sort method must be one of the defined
-        IFACE_ORDERING_CHOICES (typically indicated by a parent Device's DeviceType).
+        Naturally order interfaces by their type and numeric
+        position. The sort method must be one of the defined
+        IFACE_ORDERING_CHOICES (typically indicated by a parent
+        Device's DeviceType).
 
-        To order interfaces naturally, the `name` field is split into six distinct components: leading text (type),
-        slot, subslot, position, channel, and virtual circuit:
+        To order interfaces naturally, the `name` field is split into
+        six distinct components: leading text (type), slot, subslot,
+        position, channel, and virtual circuit:
 
             {type}{slot}/{subslot}/{position}/{subposition}:{channel}.{vc}
 
-        Components absent from the interface name are ignored. For example, an interface named GigabitEthernet1/2/3
-        would be parsed as follows:
+        Components absent from the interface name are ignored. For
+        example, an interface named GigabitEthernet1/2/3 would be
+        parsed as follows:
 
             name = 'GigabitEthernet'
             slot =  1
@@ -29,16 +35,19 @@ class InterfaceQuerySet(QuerySet):
             channel = None
             vc = 0
 
-        The original `name` field is taken as a whole to serve as a fallback in the event interfaces do not match any of
-        the prescribed fields.
+        The original `name` field is taken as a whole to serve as a
+        fallback in the event interfaces do not match any of the
+        prescribed fields.
         """
         sql_col = '{}.name'.format(self.model._meta.db_table)
         ordering = {
             IFACE_ORDERING_POSITION: (
-                '_slot', '_subslot', '_position', '_subposition', '_channel', '_type', '_vc', '_id', 'name',
+                '_slot', '_subslot', '_position', '_subposition',
+                '_channel', '_type', '_vc', '_id', 'name',
             ),
             IFACE_ORDERING_NAME: (
-                '_type', '_slot', '_subslot', '_position', '_subposition', '_channel', '_vc', '_id', 'name',
+                '_type', '_slot', '_subslot', '_position',
+                '_subposition', '_channel', '_vc', '_id', 'name',
             ),
         }[method]
 
@@ -66,7 +75,7 @@ class InterfaceQuerySet(QuerySet):
 
     def connectable(self):
         """
-        Return only physical interfaces which are capable of being connected to other interfaces (i.e. not virtual or
-        wireless).
+        Return only physical interfaces which are capable of being
+        connected to other interfaces (i.e. not virtual or wireless).
         """
         return self.exclude(form_factor__in=NONCONNECTABLE_IFACE_TYPES)

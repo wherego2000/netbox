@@ -17,17 +17,21 @@ def validate_rsa_key(key, is_secret=True):
     try:
         key = RSA.importKey(key)
     except ValueError:
-        raise forms.ValidationError("Invalid RSA key. Please ensure that your key is in PEM (base64) format.")
+        raise forms.ValidationError(
+            "Invalid RSA key. Please ensure that your key is in PEM (base64) format.")
     except Exception as e:
         raise forms.ValidationError("Invalid key detected: {}".format(e))
     if is_secret and not key.has_private():
-        raise forms.ValidationError("This looks like a public key. Please provide your private RSA key.")
+        raise forms.ValidationError(
+            "This looks like a public key. Please provide your private RSA key.")
     elif not is_secret and key.has_private():
-        raise forms.ValidationError("This looks like a private key. Please provide your public RSA key.")
+        raise forms.ValidationError(
+            "This looks like a private key. Please provide your public RSA key.")
     try:
         PKCS1_OAEP.new(key)
-    except Exception:
-        raise forms.ValidationError("Error validating RSA key. Please ensure that your key supports PKCS#1 OAEP.")
+    except:
+        raise forms.ValidationError(
+            "Error validating RSA key. Please ensure that your key supports PKCS#1 OAEP.")
 
 
 #
@@ -127,8 +131,10 @@ class SecretCSVForm(forms.ModelForm):
 
 
 class SecretBulkEditForm(BootstrapMixin, BulkEditForm):
-    pk = forms.ModelMultipleChoiceField(queryset=Secret.objects.all(), widget=forms.MultipleHiddenInput)
-    role = forms.ModelChoiceField(queryset=SecretRole.objects.all(), required=False)
+    pk = forms.ModelMultipleChoiceField(
+        queryset=Secret.objects.all(), widget=forms.MultipleHiddenInput)
+    role = forms.ModelChoiceField(
+        queryset=SecretRole.objects.all(), required=False)
     name = forms.CharField(max_length=100, required=False)
 
     class Meta:
@@ -153,8 +159,7 @@ class UserKeyForm(BootstrapMixin, forms.ModelForm):
         model = UserKey
         fields = ['public_key']
         help_texts = {
-            'public_key': "Enter your public RSA key. Keep the private one with you; you'll need it for decryption. "
-                          "Please note that passphrase-protected keys are not supported.",
+            'public_key': "Enter your public RSA key. Keep the private one with you; you'll need it for decryption.",
         }
 
     def clean_public_key(self):
@@ -167,5 +172,7 @@ class UserKeyForm(BootstrapMixin, forms.ModelForm):
 
 
 class ActivateUserKeyForm(forms.Form):
-    _selected_action = forms.ModelMultipleChoiceField(queryset=UserKey.objects.all(), label='User Keys')
-    secret_key = forms.CharField(label='Your private key', widget=forms.Textarea(attrs={'class': 'vLargeTextField'}))
+    _selected_action = forms.ModelMultipleChoiceField(
+        queryset=UserKey.objects.all(), label='User Keys')
+    secret_key = forms.CharField(label='Your private key', widget=forms.Textarea(
+        attrs={'class': 'vLargeTextField'}))

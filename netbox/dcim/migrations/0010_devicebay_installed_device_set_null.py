@@ -16,6 +16,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='devicebay',
             name='installed_device',
-            field=models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='parent_bay', to='dcim.Device'),
+            field=models.OneToOneField(
+                blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='parent_bay', to='dcim.Device'),
         ),
     ]

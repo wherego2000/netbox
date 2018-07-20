@@ -18,13 +18,17 @@ class ClusterTypeTest(HttpStatusMixin, APITestCase):
         token = Token.objects.create(user=user)
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
-        self.clustertype1 = ClusterType.objects.create(name='Test Cluster Type 1', slug='test-cluster-type-1')
-        self.clustertype2 = ClusterType.objects.create(name='Test Cluster Type 2', slug='test-cluster-type-2')
-        self.clustertype3 = ClusterType.objects.create(name='Test Cluster Type 3', slug='test-cluster-type-3')
+        self.clustertype1 = ClusterType.objects.create(
+            name='Test Cluster Type 1', slug='test-cluster-type-1')
+        self.clustertype2 = ClusterType.objects.create(
+            name='Test Cluster Type 2', slug='test-cluster-type-2')
+        self.clustertype3 = ClusterType.objects.create(
+            name='Test Cluster Type 3', slug='test-cluster-type-3')
 
     def test_get_clustertype(self):
 
-        url = reverse('virtualization-api:clustertype-detail', kwargs={'pk': self.clustertype1.pk})
+        url = reverse('virtualization-api:clustertype-detail',
+                      kwargs={'pk': self.clustertype1.pk})
         response = self.client.get(url, **self.header)
 
         self.assertEqual(response.data['name'], self.clustertype1.name)
@@ -85,7 +89,8 @@ class ClusterTypeTest(HttpStatusMixin, APITestCase):
             'slug': 'test-cluster-type-x',
         }
 
-        url = reverse('virtualization-api:clustertype-detail', kwargs={'pk': self.clustertype1.pk})
+        url = reverse('virtualization-api:clustertype-detail',
+                      kwargs={'pk': self.clustertype1.pk})
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
@@ -96,7 +101,8 @@ class ClusterTypeTest(HttpStatusMixin, APITestCase):
 
     def test_delete_clustertype(self):
 
-        url = reverse('virtualization-api:clustertype-detail', kwargs={'pk': self.clustertype1.pk})
+        url = reverse('virtualization-api:clustertype-detail',
+                      kwargs={'pk': self.clustertype1.pk})
         response = self.client.delete(url, **self.header)
 
         self.assertHttpStatus(response, status.HTTP_204_NO_CONTENT)
@@ -111,13 +117,17 @@ class ClusterGroupTest(HttpStatusMixin, APITestCase):
         token = Token.objects.create(user=user)
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
-        self.clustergroup1 = ClusterGroup.objects.create(name='Test Cluster Group 1', slug='test-cluster-group-1')
-        self.clustergroup2 = ClusterGroup.objects.create(name='Test Cluster Group 2', slug='test-cluster-group-2')
-        self.clustergroup3 = ClusterGroup.objects.create(name='Test Cluster Group 3', slug='test-cluster-group-3')
+        self.clustergroup1 = ClusterGroup.objects.create(
+            name='Test Cluster Group 1', slug='test-cluster-group-1')
+        self.clustergroup2 = ClusterGroup.objects.create(
+            name='Test Cluster Group 2', slug='test-cluster-group-2')
+        self.clustergroup3 = ClusterGroup.objects.create(
+            name='Test Cluster Group 3', slug='test-cluster-group-3')
 
     def test_get_clustergroup(self):
 
-        url = reverse('virtualization-api:clustergroup-detail', kwargs={'pk': self.clustergroup1.pk})
+        url = reverse('virtualization-api:clustergroup-detail',
+                      kwargs={'pk': self.clustergroup1.pk})
         response = self.client.get(url, **self.header)
 
         self.assertEqual(response.data['name'], self.clustergroup1.name)
@@ -178,7 +188,8 @@ class ClusterGroupTest(HttpStatusMixin, APITestCase):
             'slug': 'test-cluster-group-x',
         }
 
-        url = reverse('virtualization-api:clustergroup-detail', kwargs={'pk': self.clustergroup1.pk})
+        url = reverse('virtualization-api:clustergroup-detail',
+                      kwargs={'pk': self.clustergroup1.pk})
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
@@ -189,7 +200,8 @@ class ClusterGroupTest(HttpStatusMixin, APITestCase):
 
     def test_delete_clustergroup(self):
 
-        url = reverse('virtualization-api:clustergroup-detail', kwargs={'pk': self.clustergroup1.pk})
+        url = reverse('virtualization-api:clustergroup-detail',
+                      kwargs={'pk': self.clustergroup1.pk})
         response = self.client.delete(url, **self.header)
 
         self.assertHttpStatus(response, status.HTTP_204_NO_CONTENT)
@@ -204,16 +216,22 @@ class ClusterTest(HttpStatusMixin, APITestCase):
         token = Token.objects.create(user=user)
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
-        cluster_type = ClusterType.objects.create(name='Test Cluster Type 1', slug='test-cluster-type-1')
-        cluster_group = ClusterGroup.objects.create(name='Test Cluster Group 1', slug='test-cluster-group-1')
+        cluster_type = ClusterType.objects.create(
+            name='Test Cluster Type 1', slug='test-cluster-type-1')
+        cluster_group = ClusterGroup.objects.create(
+            name='Test Cluster Group 1', slug='test-cluster-group-1')
 
-        self.cluster1 = Cluster.objects.create(name='Test Cluster 1', type=cluster_type, group=cluster_group)
-        self.cluster2 = Cluster.objects.create(name='Test Cluster 2', type=cluster_type, group=cluster_group)
-        self.cluster3 = Cluster.objects.create(name='Test Cluster 3', type=cluster_type, group=cluster_group)
+        self.cluster1 = Cluster.objects.create(
+            name='Test Cluster 1', type=cluster_type, group=cluster_group)
+        self.cluster2 = Cluster.objects.create(
+            name='Test Cluster 2', type=cluster_type, group=cluster_group)
+        self.cluster3 = Cluster.objects.create(
+            name='Test Cluster 3', type=cluster_type, group=cluster_group)
 
     def test_get_cluster(self):
 
-        url = reverse('virtualization-api:cluster-detail', kwargs={'pk': self.cluster1.pk})
+        url = reverse('virtualization-api:cluster-detail',
+                      kwargs={'pk': self.cluster1.pk})
         response = self.client.get(url, **self.header)
 
         self.assertEqual(response.data['name'], self.cluster1.name)
@@ -274,15 +292,18 @@ class ClusterTest(HttpStatusMixin, APITestCase):
 
     def test_update_cluster(self):
 
-        cluster_type2 = ClusterType.objects.create(name='Test Cluster Type 2', slug='test-cluster-type-2')
-        cluster_group2 = ClusterGroup.objects.create(name='Test Cluster Group 2', slug='test-cluster-group-2')
+        cluster_type2 = ClusterType.objects.create(
+            name='Test Cluster Type 2', slug='test-cluster-type-2')
+        cluster_group2 = ClusterGroup.objects.create(
+            name='Test Cluster Group 2', slug='test-cluster-group-2')
         data = {
             'name': 'Test Cluster X',
             'type': cluster_type2.pk,
             'group': cluster_group2.pk,
         }
 
-        url = reverse('virtualization-api:cluster-detail', kwargs={'pk': self.cluster1.pk})
+        url = reverse('virtualization-api:cluster-detail',
+                      kwargs={'pk': self.cluster1.pk})
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
@@ -294,7 +315,8 @@ class ClusterTest(HttpStatusMixin, APITestCase):
 
     def test_delete_cluster(self):
 
-        url = reverse('virtualization-api:cluster-detail', kwargs={'pk': self.cluster1.pk})
+        url = reverse('virtualization-api:cluster-detail',
+                      kwargs={'pk': self.cluster1.pk})
         response = self.client.delete(url, **self.header)
 
         self.assertHttpStatus(response, status.HTTP_204_NO_CONTENT)
@@ -309,17 +331,24 @@ class VirtualMachineTest(HttpStatusMixin, APITestCase):
         token = Token.objects.create(user=user)
         self.header = {'HTTP_AUTHORIZATION': 'Token {}'.format(token.key)}
 
-        cluster_type = ClusterType.objects.create(name='Test Cluster Type 1', slug='test-cluster-type-1')
-        cluster_group = ClusterGroup.objects.create(name='Test Cluster Group 1', slug='test-cluster-group-1')
-        self.cluster1 = Cluster.objects.create(name='Test Cluster 1', type=cluster_type, group=cluster_group)
+        cluster_type = ClusterType.objects.create(
+            name='Test Cluster Type 1', slug='test-cluster-type-1')
+        cluster_group = ClusterGroup.objects.create(
+            name='Test Cluster Group 1', slug='test-cluster-group-1')
+        self.cluster1 = Cluster.objects.create(
+            name='Test Cluster 1', type=cluster_type, group=cluster_group)
 
-        self.virtualmachine1 = VirtualMachine.objects.create(name='Test Virtual Machine 1', cluster=self.cluster1)
-        self.virtualmachine2 = VirtualMachine.objects.create(name='Test Virtual Machine 2', cluster=self.cluster1)
-        self.virtualmachine3 = VirtualMachine.objects.create(name='Test Virtual Machine 3', cluster=self.cluster1)
+        self.virtualmachine1 = VirtualMachine.objects.create(
+            name='Test Virtual Machine 1', cluster=self.cluster1)
+        self.virtualmachine2 = VirtualMachine.objects.create(
+            name='Test Virtual Machine 2', cluster=self.cluster1)
+        self.virtualmachine3 = VirtualMachine.objects.create(
+            name='Test Virtual Machine 3', cluster=self.cluster1)
 
     def test_get_virtualmachine(self):
 
-        url = reverse('virtualization-api:virtualmachine-detail', kwargs={'pk': self.virtualmachine1.pk})
+        url = reverse('virtualization-api:virtualmachine-detail',
+                      kwargs={'pk': self.virtualmachine1.pk})
         response = self.client.get(url, **self.header)
 
         self.assertEqual(response.data['name'], self.virtualmachine1.name)
@@ -385,7 +414,8 @@ class VirtualMachineTest(HttpStatusMixin, APITestCase):
             'cluster': cluster2.pk,
         }
 
-        url = reverse('virtualization-api:virtualmachine-detail', kwargs={'pk': self.virtualmachine1.pk})
+        url = reverse('virtualization-api:virtualmachine-detail',
+                      kwargs={'pk': self.virtualmachine1.pk})
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
@@ -396,7 +426,8 @@ class VirtualMachineTest(HttpStatusMixin, APITestCase):
 
     def test_delete_virtualmachine(self):
 
-        url = reverse('virtualization-api:virtualmachine-detail', kwargs={'pk': self.virtualmachine1.pk})
+        url = reverse('virtualization-api:virtualmachine-detail',
+                      kwargs={'pk': self.virtualmachine1.pk})
         response = self.client.delete(url, **self.header)
 
         self.assertHttpStatus(response, status.HTTP_204_NO_CONTENT)

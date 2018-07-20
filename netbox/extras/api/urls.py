@@ -9,6 +9,7 @@ class ExtrasRootView(routers.APIRootView):
     """
     Extras API root view
     """
+
     def get_view_name(self):
         return 'Extras'
 
@@ -17,7 +18,8 @@ router = routers.DefaultRouter()
 router.APIRootView = ExtrasRootView
 
 # Field choices
-router.register(r'_choices', views.ExtrasFieldChoicesViewSet, base_name='field-choice')
+router.register(r'_choices', views.ExtrasFieldChoicesViewSet,
+                base_name='field-choice')
 
 # Graphs
 router.register(r'graphs', views.GraphViewSet)

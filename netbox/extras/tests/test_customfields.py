@@ -34,8 +34,10 @@ class CustomFieldTest(TestCase):
             {'field_type': CF_TYPE_INTEGER, 'field_value': 42, 'empty_value': None},
             {'field_type': CF_TYPE_BOOLEAN, 'field_value': True, 'empty_value': None},
             {'field_type': CF_TYPE_BOOLEAN, 'field_value': False, 'empty_value': None},
-            {'field_type': CF_TYPE_DATE, 'field_value': date(2016, 6, 23), 'empty_value': None},
-            {'field_type': CF_TYPE_URL, 'field_value': 'http://example.com/', 'empty_value': ''},
+            {'field_type': CF_TYPE_DATE, 'field_value': date(
+                2016, 6, 23), 'empty_value': None},
+            {'field_type': CF_TYPE_URL,
+                'field_value': 'http://example.com/', 'empty_value': ''},
         )
 
         obj_type = ContentType.objects.get_for_model(Site)
@@ -43,7 +45,8 @@ class CustomFieldTest(TestCase):
         for data in DATA:
 
             # Create a custom field
-            cf = CustomField(type=data['field_type'], name='my_field', required=False)
+            cf = CustomField(type=data['field_type'],
+                             name='my_field', required=False)
             cf.save()
             cf.obj_type = [obj_type]
             cf.save()
@@ -55,13 +58,15 @@ class CustomFieldTest(TestCase):
             cfv.save()
 
             # Retrieve the stored value
-            cfv = CustomFieldValue.objects.filter(obj_type=obj_type, obj_id=site.pk).first()
+            cfv = CustomFieldValue.objects.filter(
+                obj_type=obj_type, obj_id=site.pk).first()
             self.assertEqual(cfv.value, data['field_value'])
 
             # Delete the stored value
             cfv.value = data['empty_value']
             cfv.save()
-            self.assertEqual(CustomFieldValue.objects.filter(obj_type=obj_type, obj_id=site.pk).count(), 0)
+            self.assertEqual(CustomFieldValue.objects.filter(
+                obj_type=obj_type, obj_id=site.pk).count(), 0)
 
             # Delete the custom field
             cf.delete()
@@ -90,13 +95,15 @@ class CustomFieldTest(TestCase):
         cfv.save()
 
         # Retrieve the stored value
-        cfv = CustomFieldValue.objects.filter(obj_type=obj_type, obj_id=site.pk).first()
+        cfv = CustomFieldValue.objects.filter(
+            obj_type=obj_type, obj_id=site.pk).first()
         self.assertEqual(str(cfv.value), 'Option A')
 
         # Delete the stored value
         cfv.value = None
         cfv.save()
-        self.assertEqual(CustomFieldValue.objects.filter(obj_type=obj_type, obj_id=site.pk).count(), 0)
+        self.assertEqual(CustomFieldValue.objects.filter(
+            obj_type=obj_type, obj_id=site.pk).count(), 0)
 
         # Delete the custom field
         cf.delete()
@@ -119,7 +126,8 @@ class CustomFieldAPITest(HttpStatusMixin, APITestCase):
         self.cf_text.save()
 
         # Integer custom field
-        self.cf_integer = CustomField(type=CF_TYPE_INTEGER, name='magic_number')
+        self.cf_integer = CustomField(
+            type=CF_TYPE_INTEGER, name='magic_number')
         self.cf_integer.save()
         self.cf_integer.obj_type = [content_type]
         self.cf_integer.save()
@@ -147,11 +155,14 @@ class CustomFieldAPITest(HttpStatusMixin, APITestCase):
         self.cf_select.save()
         self.cf_select.obj_type = [content_type]
         self.cf_select.save()
-        self.cf_select_choice1 = CustomFieldChoice(field=self.cf_select, value='Foo')
+        self.cf_select_choice1 = CustomFieldChoice(
+            field=self.cf_select, value='Foo')
         self.cf_select_choice1.save()
-        self.cf_select_choice2 = CustomFieldChoice(field=self.cf_select, value='Bar')
+        self.cf_select_choice2 = CustomFieldChoice(
+            field=self.cf_select, value='Bar')
         self.cf_select_choice2.save()
-        self.cf_select_choice3 = CustomFieldChoice(field=self.cf_select, value='Baz')
+        self.cf_select_choice3 = CustomFieldChoice(
+            field=self.cf_select, value='Baz')
         self.cf_select_choice3.save()
 
         self.site = Site.objects.create(name='Test Site 1', slug='test-site-1')
@@ -190,11 +201,16 @@ class CustomFieldAPITest(HttpStatusMixin, APITestCase):
         response = self.client.get(url, **self.header)
 
         self.assertEqual(response.data['name'], self.site.name)
-        self.assertEqual(response.data['custom_fields'].get('magic_word'), CUSTOM_FIELD_VALUES[0][1])
-        self.assertEqual(response.data['custom_fields'].get('magic_number'), CUSTOM_FIELD_VALUES[1][1])
-        self.assertEqual(response.data['custom_fields'].get('is_magic'), CUSTOM_FIELD_VALUES[2][1])
-        self.assertEqual(response.data['custom_fields'].get('magic_date'), CUSTOM_FIELD_VALUES[3][1])
-        self.assertEqual(response.data['custom_fields'].get('magic_url'), CUSTOM_FIELD_VALUES[4][1])
+        self.assertEqual(response.data['custom_fields'].get(
+            'magic_word'), CUSTOM_FIELD_VALUES[0][1])
+        self.assertEqual(response.data['custom_fields'].get(
+            'magic_number'), CUSTOM_FIELD_VALUES[1][1])
+        self.assertEqual(response.data['custom_fields'].get(
+            'is_magic'), CUSTOM_FIELD_VALUES[2][1])
+        self.assertEqual(response.data['custom_fields'].get(
+            'magic_date'), CUSTOM_FIELD_VALUES[3][1])
+        self.assertEqual(response.data['custom_fields'].get(
+            'magic_url'), CUSTOM_FIELD_VALUES[4][1])
         self.assertEqual(response.data['custom_fields'].get('magic_choice'), {
             'value': self.cf_select_choice1.pk, 'label': 'Foo'
         })
@@ -213,7 +229,8 @@ class CustomFieldAPITest(HttpStatusMixin, APITestCase):
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
-        self.assertEqual(response.data['custom_fields'].get('magic_word'), data['custom_fields']['magic_word'])
+        self.assertEqual(response.data['custom_fields'].get(
+            'magic_word'), data['custom_fields']['magic_word'])
         cfv = self.site.custom_field_values.get(field=self.cf_text)
         self.assertEqual(cfv.value, data['custom_fields']['magic_word'])
 
@@ -231,7 +248,8 @@ class CustomFieldAPITest(HttpStatusMixin, APITestCase):
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
-        self.assertEqual(response.data['custom_fields'].get('magic_number'), data['custom_fields']['magic_number'])
+        self.assertEqual(response.data['custom_fields'].get(
+            'magic_number'), data['custom_fields']['magic_number'])
         cfv = self.site.custom_field_values.get(field=self.cf_integer)
         self.assertEqual(cfv.value, data['custom_fields']['magic_number'])
 
@@ -249,7 +267,8 @@ class CustomFieldAPITest(HttpStatusMixin, APITestCase):
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
-        self.assertEqual(response.data['custom_fields'].get('is_magic'), data['custom_fields']['is_magic'])
+        self.assertEqual(response.data['custom_fields'].get(
+            'is_magic'), data['custom_fields']['is_magic'])
         cfv = self.site.custom_field_values.get(field=self.cf_boolean)
         self.assertEqual(cfv.value, data['custom_fields']['is_magic'])
 
@@ -267,9 +286,11 @@ class CustomFieldAPITest(HttpStatusMixin, APITestCase):
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
-        self.assertEqual(response.data['custom_fields'].get('magic_date'), data['custom_fields']['magic_date'])
+        self.assertEqual(response.data['custom_fields'].get(
+            'magic_date'), data['custom_fields']['magic_date'])
         cfv = self.site.custom_field_values.get(field=self.cf_date)
-        self.assertEqual(cfv.value.isoformat(), data['custom_fields']['magic_date'])
+        self.assertEqual(cfv.value.isoformat(),
+                         data['custom_fields']['magic_date'])
 
     def test_set_custom_field_url(self):
 
@@ -285,7 +306,8 @@ class CustomFieldAPITest(HttpStatusMixin, APITestCase):
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
-        self.assertEqual(response.data['custom_fields'].get('magic_url'), data['custom_fields']['magic_url'])
+        self.assertEqual(response.data['custom_fields'].get(
+            'magic_url'), data['custom_fields']['magic_url'])
         cfv = self.site.custom_field_values.get(field=self.cf_url)
         self.assertEqual(cfv.value, data['custom_fields']['magic_url'])
 
@@ -303,6 +325,7 @@ class CustomFieldAPITest(HttpStatusMixin, APITestCase):
         response = self.client.put(url, data, format='json', **self.header)
 
         self.assertHttpStatus(response, status.HTTP_200_OK)
-        self.assertEqual(response.data['custom_fields'].get('magic_choice'), data['custom_fields']['magic_choice'])
+        self.assertEqual(response.data['custom_fields'].get(
+            'magic_choice'), data['custom_fields']['magic_choice'])
         cfv = self.site.custom_field_values.get(field=self.cf_select)
         self.assertEqual(cfv.value.pk, data['custom_fields']['magic_choice'])

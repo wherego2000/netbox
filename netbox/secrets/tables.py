@@ -2,8 +2,11 @@ from __future__ import unicode_literals
 
 import django_tables2 as tables
 
-from utilities.tables import BaseTable, ToggleColumn
-from .models import SecretRole, Secret
+from utilities.tables import BaseTable
+from utilities.tables import ToggleColumn
+
+from .models import Secret
+from .models import SecretRole
 
 SECRETROLE_ACTIONS = """
 {% if perms.secrets.change_secretrole %}
@@ -40,4 +43,4 @@ class SecretTable(BaseTable):
 
     class Meta(BaseTable.Meta):
         model = Secret
-        fields = ('pk', 'device', 'role', 'name', 'last_updated')
+        fields = ('pk', 'device', 'role', 'name', "password", 'last_updated')

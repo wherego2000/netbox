@@ -4,7 +4,7 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.decorators import detail_route
-from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
 from extras.api.views import CustomFieldModelViewSet
@@ -75,7 +75,8 @@ class RoleViewSet(ModelViewSet):
 #
 
 class PrefixViewSet(CustomFieldModelViewSet):
-    queryset = Prefix.objects.select_related('site', 'vrf__tenant', 'tenant', 'vlan', 'role')
+    queryset = Prefix.objects.select_related(
+        'site', 'vrf__tenant', 'tenant', 'vlan', 'role')
     serializer_class = serializers.PrefixSerializer
     write_serializer_class = serializers.WritablePrefixSerializer
     filter_class = filters.PrefixFilter
@@ -95,39 +96,17 @@ class PrefixViewSet(CustomFieldModelViewSet):
                 raise PermissionDenied()
 
             # Normalize to a list of objects
-            requested_prefixes = request.data if isinstance(request.data, list) else [request.data]
+            requested_prefixes = request.data if isinstance(
+                request.data, list) else [request.data]
 
             # Allocate prefixes to the requested objects based on availability within the parent
-            for i, requested_prefix in enumerate(requested_prefixes):
-
-                # Validate requested prefix size
-                error_msg = None
-                if 'prefix_length' not in requested_prefix:
-                    error_msg = "Item {}: prefix_length field missing".format(i)
-                elif not isinstance(requested_prefix['prefix_length'], int):
-                    error_msg = "Item {}: Invalid prefix length ({})".format(
-                        i, requested_prefix['prefix_length']
-                    )
-                elif prefix.family == 4 and requested_prefix['prefix_length'] > 32:
-                    error_msg = "Item {}: Invalid prefix length ({}) for IPv4".format(
-                        i, requested_prefix['prefix_length']
-                    )
-                elif prefix.family == 6 and requested_prefix['prefix_length'] > 128:
-                    error_msg = "Item {}: Invalid prefix length ({}) for IPv6".format(
-                        i, requested_prefix['prefix_length']
-                    )
-                if error_msg:
-                    return Response(
-                        {
-                            "detail": error_msg
-                        },
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
+            for requested_prefix in requested_prefixes:
 
                 # Find the first available prefix equal to or larger than the requested size
                 for available_prefix in available_prefixes.iter_cidrs():
                     if requested_prefix['prefix_length'] >= available_prefix.prefixlen:
-                        allocated_prefix = '{}/{}'.format(available_prefix.network, requested_prefix['prefix_length'])
+                        allocated_prefix = '{}/{}'.format(
+                            available_prefix.network, requested_prefix['prefix_length'])
                         requested_prefix['prefix'] = allocated_prefix
                         requested_prefix['vrf'] = prefix.vrf.pk if prefix.vrf else None
                         break
@@ -144,9 +123,11 @@ class PrefixViewSet(CustomFieldModelViewSet):
 
             # Initialize the serializer with a list or a single object depending on what was requested
             if isinstance(request.data, list):
-                serializer = serializers.WritablePrefixSerializer(data=requested_prefixes, many=True)
+                serializer = serializers.WritablePrefixSerializer(
+                    data=requested_prefixes, many=True)
             else:
-                serializer = serializers.WritablePrefixSerializer(data=requested_prefixes[0])
+                serializer = serializers.WritablePrefixSerializer(
+                    data=requested_prefixes[0])
 
             # Create the new Prefix(es)
             if serializer.is_valid():
@@ -181,31 +162,33 @@ class PrefixViewSet(CustomFieldModelViewSet):
                 raise PermissionDenied()
 
             # Normalize to a list of objects
-            requested_ips = request.data if isinstance(request.data, list) else [request.data]
+            requested_ips = request.data if isinstance(
+                request.data, list) else [request.data]
 
             # Determine if the requested number of IPs is available
-            available_ips = prefix.get_available_ips()
-            if available_ips.size < len(requested_ips):
+            available_ips = list(prefix.get_available_ips())
+            if len(available_ips) < len(requested_ips):
                 return Response(
                     {
                         "detail": "An insufficient number of IP addresses are available within the prefix {} ({} "
-                                  "requested, {} available)".format(prefix, len(requested_ips), len(available_ips))
+                                  "requested, {} available)".format(
+                                      prefix, len(requested_ips), len(available_ips))
                     },
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
             # Assign addresses from the list of available IPs and copy VRF assignment from the parent prefix
-            available_ips = iter(available_ips)
-            prefix_length = prefix.prefix.prefixlen
             for requested_ip in requested_ips:
-                requested_ip['address'] = '{}/{}'.format(next(available_ips), prefix_length)
+                requested_ip['address'] = available_ips.pop(0)
                 requested_ip['vrf'] = prefix.vrf.pk if prefix.vrf else None
 
             # Initialize the serializer with a list or a single object depending on what was requested
             if isinstance(request.data, list):
-                serializer = serializers.WritableIPAddressSerializer(data=requested_ips, many=True)
+                serializer = serializers.WritableIPAddressSerializer(
+                    data=requested_ips, many=True)
             else:
-                serializer = serializers.WritableIPAddressSerializer(data=requested_ips[0])
+                serializer = serializers.WritableIPAddressSerializer(
+                    data=requested_ips[0])
 
             # Create the new IP address(es)
             if serializer.is_valid():
@@ -217,7 +200,8 @@ class PrefixViewSet(CustomFieldModelViewSet):
         # Determine the maximum number of IPs to return
         else:
             try:
-                limit = int(request.query_params.get('limit', settings.PAGINATE_COUNT))
+                limit = int(request.query_params.get(
+                    'limit', settings.PAGINATE_COUNT))
             except ValueError:
                 limit = settings.PAGINATE_COUNT
             if settings.MAX_PAGE_SIZE:

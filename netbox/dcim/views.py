@@ -1,40 +1,135 @@
 from __future__ import unicode_literals
 
+#
+# Devices
+#
+import re
 from operator import attrgetter
 
+import simplejson as json
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
-from django.core.paginator import EmptyPage, PageNotAnInteger
+from django.core.paginator import EmptyPage
+from django.core.paginator import PageNotAnInteger
+from django.core.urlresolvers import reverse_lazy
 from django.db import transaction
-from django.db.models import Count, Q
+from django.db.models import Count
+from django.db.models import Q
 from django.forms import modelformset_factory
 from django.http import HttpResponseRedirect
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import get_object_or_404
+from django.shortcuts import redirect
+from django.shortcuts import render
 from django.urls import reverse
 from django.utils.html import escape
-from django.utils.http import is_safe_url, urlencode
+from django.utils.http import is_safe_url
+from django.utils.http import urlencode
 from django.utils.safestring import mark_safe
+from django.views.generic import DetailView
+from django.views.generic import ListView
+from django.views.generic import TemplateView
 from django.views.generic import View
-from natsort import natsorted
+from extras.models import GRAPH_TYPE_INTERFACE
+from extras.models import GRAPH_TYPE_SITE
+from extras.models import Graph
+from extras.models import TopologyMap
+from extras.models import UserAction
 
 from circuits.models import Circuit
-from extras.models import Graph, TopologyMap, GRAPH_TYPE_INTERFACE, GRAPH_TYPE_SITE, UserAction
-from ipam.models import Prefix, Service, VLAN
+from dcim.constants import CONNECTION_STATUS_CONNECTED
+from dcim.models import ConsolePort
+from dcim.models import InterfaceConnection
+from dcim.tasks import device_bmc_power_consumer
+from dcim.tasks import host_get_mac_consumer
+from dcim.tasks import host_get_name_consumer
+from dcim.tasks import server_bmc_get
+from dcim.tasks import switch_consumer
+from dcim.tasks import update_device_switch_connection
+from ipam.models import VLAN
+from ipam.models import Prefix
+from ipam.models import Service
+from json_views.views import JSONDataView
+from json_views.views import JSONDetailView
+from natsort import natsorted
 from utilities.forms import ConfirmationForm
 from utilities.paginator import EnhancedPaginator
-from utilities.views import (
-    BulkComponentCreateView, BulkDeleteView, BulkEditView, BulkImportView, ComponentCreateView, GetReturnURLMixin,
-    ObjectDeleteView, ObjectEditView, ObjectListView,
-)
+from utilities.utils import draw_level_1_interface_connections_cytoscape
+from utilities.utils import draw_level_1_interface_connections_netjson
+from utilities.views import BulkComponentCreateView
+from utilities.views import BulkDeleteView
+from utilities.views import BulkEditView
+from utilities.views import BulkImportView
+from utilities.views import ComponentCreateView
+from utilities.views import GetReturnURLMixin
+from utilities.views import ObjectDeleteView
+from utilities.views import ObjectEditView
+from utilities.views import ObjectListView
 from virtualization.models import VirtualMachine
-from . import filters, forms, tables
-from .constants import CONNECTION_STATUS_CONNECTED
-from .models import (
-    ConsolePort, ConsolePortTemplate, ConsoleServerPort, ConsoleServerPortTemplate, Device, DeviceBay,
-    DeviceBayTemplate, DeviceRole, DeviceType, Interface, InterfaceConnection, InterfaceTemplate, Manufacturer,
-    InventoryItem, Platform, PowerOutlet, PowerOutletTemplate, PowerPort, PowerPortTemplate, Rack, RackGroup,
-    RackReservation, RackRole, Region, Site, VirtualChassis,
-)
+
+from . import filters
+from . import forms
+from . import tables
+from .models import ConsolePortTemplate
+from .models import ConsoleServerPort
+from .models import ConsoleServerPortTemplate
+from .models import Device
+from .models import DeviceBay
+from .models import DeviceBayTemplate
+from .models import DeviceRole
+from .models import DeviceType
+from .models import Interface
+from .models import InterfaceConnection
+from .models import InterfaceTemplate
+from .models import InventoryItem
+from .models import Manufacturer
+from .models import Platform
+from .models import PowerOutlet
+from .models import PowerOutletTemplate
+from .models import PowerPort
+from .models import PowerPortTemplate
+from .models import Rack
+from .models import RackGroup
+from .models import RackReservation
+from .models import RackRole
+from .models import Region
+from .models import Site
+from .models import VirtualChassis
+
+# This import is important because celery tasks, when defined using
+# `@shared_task`, will be assigned a name by celery which observes the
+# `app.module.func` structure. Therefore, in views we have to call
+# `dcim.tasks.<func>.delay()` so the name matches!  Otherwise, call
+# `.delay` will hang, and queue never receives this call.
+
+
+def device_scan_helper(ids):
+    """Helper function.
+
+    Args:
+      ids (list): list of device ids
+    """
+    # scan switches & servers
+    for d in filter(lambda x: x.management_access,
+                    Device.objects.filter(id__in=ids,
+                                          platform__isnull=False)):
+
+        print "scanning", d
+
+        # as switch
+        if re.search("enos|cnos", d.platform.slug):
+            ip, secret = d.management_access
+            switch_consumer.delay(d.id)
+
+        elif re.search("linux", d.platform.slug):
+            host_get_name_consumer.delay(d.id, is_virtual=False)
+            host_get_mac_consumer.delay(d.id, is_virtual=False)
+
+        # scan BMC controllers
+        if d.bmc_controllers:
+            server_bmc_get.delay(d.id)
+
+    # update interface connections
+    update_device_switch_connection.delay()
 
 
 class BulkRenameView(View):
@@ -54,12 +149,14 @@ class BulkRenameView(View):
             return_url = 'home'
 
         if '_preview' in request.POST or '_apply' in request.POST:
-            form = self.form(request.POST, initial={'pk': request.POST.getlist('pk')})
+            form = self.form(request.POST, initial={
+                             'pk': request.POST.getlist('pk')})
             selected_objects = self.queryset.filter(pk__in=form.initial['pk'])
 
             if form.is_valid():
                 for obj in selected_objects:
-                    obj.new_name = obj.name.replace(form.cleaned_data['find'], form.cleaned_data['replace'])
+                    obj.new_name = obj.name.replace(
+                        form.cleaned_data['find'], form.cleaned_data['replace'])
 
                 if '_apply' in request.POST:
                     for obj in selected_objects:
@@ -110,7 +207,8 @@ class BulkDisconnectView(View):
 
         else:
             form = self.form(initial={'pk': request.POST.getlist('pk')})
-            selected_objects = self.model.objects.filter(pk__in=form.initial['pk'])
+            selected_objects = self.model.objects.filter(
+                pk__in=form.initial['pk'])
 
         return render(request, self.template_name, {
             'form': form,
@@ -157,7 +255,6 @@ class RegionBulkDeleteView(PermissionRequiredMixin, BulkDeleteView):
     permission_required = 'dcim.delete_region'
     cls = Region
     queryset = Region.objects.annotate(site_count=Count('sites'))
-    filter = filters.RegionFilter
     table = tables.RegionTable
     default_return_url = 'dcim:region_list'
 
@@ -178,7 +275,8 @@ class SiteView(View):
 
     def get(self, request, slug):
 
-        site = get_object_or_404(Site.objects.select_related('region', 'tenant__group'), slug=slug)
+        site = get_object_or_404(Site.objects.select_related(
+            'region', 'tenant__group'), slug=slug)
         stats = {
             'rack_count': Rack.objects.filter(site=site).count(),
             'device_count': Device.objects.filter(site=site).count(),
@@ -187,7 +285,8 @@ class SiteView(View):
             'circuit_count': Circuit.objects.filter(terminations__site=site).count(),
             'vm_count': VirtualMachine.objects.filter(cluster__site=site).count(),
         }
-        rack_groups = RackGroup.objects.filter(site=site).annotate(rack_count=Count('racks'))
+        rack_groups = RackGroup.objects.filter(
+            site=site).annotate(rack_count=Count('racks'))
         topology_maps = TopologyMap.objects.filter(site=site)
         show_graphs = Graph.objects.filter(type=GRAPH_TYPE_SITE).exists()
 
@@ -240,7 +339,8 @@ class SiteBulkEditView(PermissionRequiredMixin, BulkEditView):
 #
 
 class RackGroupListView(ObjectListView):
-    queryset = RackGroup.objects.select_related('site').annotate(rack_count=Count('racks'))
+    queryset = RackGroup.objects.select_related(
+        'site').annotate(rack_count=Count('racks'))
     filter = filters.RackGroupFilter
     filter_form = forms.RackGroupFilterForm
     table = tables.RackGroupTable
@@ -270,7 +370,8 @@ class RackGroupBulkImportView(PermissionRequiredMixin, BulkImportView):
 class RackGroupBulkDeleteView(PermissionRequiredMixin, BulkDeleteView):
     permission_required = 'dcim.delete_rackgroup'
     cls = RackGroup
-    queryset = RackGroup.objects.select_related('site').annotate(rack_count=Count('racks'))
+    queryset = RackGroup.objects.select_related(
+        'site').annotate(rack_count=Count('racks'))
     filter = filters.RackGroupFilter
     table = tables.RackGroupTable
     default_return_url = 'dcim:rackgroup_list'
@@ -376,14 +477,25 @@ class RackView(View):
 
     def get(self, request, pk):
 
-        rack = get_object_or_404(Rack.objects.select_related('site__region', 'tenant__group', 'group', 'role'), pk=pk)
+        rack = get_object_or_404(Rack.objects.select_related(
+            'site__region', 'tenant__group', 'group', 'role'), pk=pk)
 
         nonracked_devices = Device.objects.filter(rack=rack, position__isnull=True, parent_bay__isnull=True) \
             .select_related('device_type__manufacturer')
-        next_rack = Rack.objects.filter(site=rack.site, name__gt=rack.name).order_by('name').first()
-        prev_rack = Rack.objects.filter(site=rack.site, name__lt=rack.name).order_by('-name').first()
+        next_rack = Rack.objects.filter(
+            site=rack.site, name__gt=rack.name).order_by('name').first()
+        prev_rack = Rack.objects.filter(
+            site=rack.site, name__lt=rack.name).order_by('-name').first()
 
         reservations = RackReservation.objects.filter(rack=rack)
+
+        # Draw network topology for all devices
+        # on this rack.
+        devices = rack.devices.all()
+        connections = InterfaceConnection.objects.filter(
+            Q(interface_a__device__in=devices) |
+            Q(interface_b__device__in=devices))
+        topology = draw_level_1_interface_connections_cytoscape(connections)
 
         return render(request, 'dcim/rack.html', {
             'rack': rack,
@@ -393,7 +505,29 @@ class RackView(View):
             'prev_rack': prev_rack,
             'front_elevation': rack.get_front_elevation(),
             'rear_elevation': rack.get_rear_elevation(),
+            "topology": topology,
+            "netjson_url": reverse_lazy("dcim:rack_netjson",
+                                        kwargs={"pk": rack.id})
         })
+
+
+class RackNetJsonView(JSONDetailView):
+    model = Rack
+    template_name = ""
+
+    def get_context_data(self, **kwargs):
+        context = super(JSONDetailView, self).get_context_data(**kwargs)
+        rack = self.get_object()
+
+        # Draw network topology for all devices
+        # on this rack.
+        devices = rack.devices.all()
+        connections = InterfaceConnection.objects.filter(
+            Q(interface_a__device__in=devices) |
+            Q(interface_b__device__in=devices))
+
+        context = draw_level_1_interface_connections_netjson(connections)
+        return context
 
 
 class RackCreateView(PermissionRequiredMixin, ObjectEditView):
@@ -438,6 +572,26 @@ class RackBulkDeleteView(PermissionRequiredMixin, BulkDeleteView):
     filter = filters.RackFilter
     table = tables.RackTable
     default_return_url = 'dcim:rack_list'
+
+
+class RackScanView(DetailView):
+    """Batch scan all devices on this rack.
+    """
+    model = Rack
+    template_name = ""
+
+    def post(self, request, *args, **kwargs):
+        rack = self.get_object()
+
+        # scan switches & servers
+        ids = [d.id for d in filter(lambda x: x.management_access,
+                                    Device.objects.filter(
+                                        rack=rack,
+                                        platform__isnull=False))]
+        device_scan_helper(ids)
+
+        return HttpResponseRedirect(reverse_lazy("dcim:rack",
+                                                 kwargs={"pk": rack.id}))
 
 
 #
@@ -492,7 +646,6 @@ class RackReservationBulkEditView(PermissionRequiredMixin, BulkEditView):
 class RackReservationBulkDeleteView(PermissionRequiredMixin, BulkDeleteView):
     permission_required = 'dcim.delete_rackreservation'
     cls = RackReservation
-    filter = filters.RackReservationFilter
     table = tables.RackReservationTable
     default_return_url = 'dcim:rackreservation_list'
 
@@ -533,7 +686,8 @@ class ManufacturerBulkImportView(PermissionRequiredMixin, BulkImportView):
 class ManufacturerBulkDeleteView(PermissionRequiredMixin, BulkDeleteView):
     permission_required = 'dcim.delete_manufacturer'
     cls = Manufacturer
-    queryset = Manufacturer.objects.annotate(devicetype_count=Count('device_types'))
+    queryset = Manufacturer.objects.annotate(
+        devicetype_count=Count('device_types'))
     table = tables.ManufacturerTable
     default_return_url = 'dcim:manufacturer_list'
 
@@ -543,7 +697,8 @@ class ManufacturerBulkDeleteView(PermissionRequiredMixin, BulkDeleteView):
 #
 
 class DeviceTypeListView(ObjectListView):
-    queryset = DeviceType.objects.select_related('manufacturer').annotate(instance_count=Count('instances'))
+    queryset = DeviceType.objects.select_related(
+        'manufacturer').annotate(instance_count=Count('instances'))
     filter = filters.DeviceTypeFilter
     filter_form = forms.DeviceTypeFilterForm
     table = tables.DeviceTypeTable
@@ -558,19 +713,23 @@ class DeviceTypeView(View):
 
         # Component tables
         consoleport_table = tables.ConsolePortTemplateTable(
-            natsorted(ConsolePortTemplate.objects.filter(device_type=devicetype), key=attrgetter('name')),
+            natsorted(ConsolePortTemplate.objects.filter(
+                device_type=devicetype), key=attrgetter('name')),
             orderable=False
         )
         consoleserverport_table = tables.ConsoleServerPortTemplateTable(
-            natsorted(ConsoleServerPortTemplate.objects.filter(device_type=devicetype), key=attrgetter('name')),
+            natsorted(ConsoleServerPortTemplate.objects.filter(
+                device_type=devicetype), key=attrgetter('name')),
             orderable=False
         )
         powerport_table = tables.PowerPortTemplateTable(
-            natsorted(PowerPortTemplate.objects.filter(device_type=devicetype), key=attrgetter('name')),
+            natsorted(PowerPortTemplate.objects.filter(
+                device_type=devicetype), key=attrgetter('name')),
             orderable=False
         )
         poweroutlet_table = tables.PowerOutletTemplateTable(
-            natsorted(PowerOutletTemplate.objects.filter(device_type=devicetype), key=attrgetter('name')),
+            natsorted(PowerOutletTemplate.objects.filter(
+                device_type=devicetype), key=attrgetter('name')),
             orderable=False
         )
         interface_table = tables.InterfaceTemplateTable(
@@ -580,7 +739,8 @@ class DeviceTypeView(View):
             orderable=False
         )
         devicebay_table = tables.DeviceBayTemplateTable(
-            natsorted(DeviceBayTemplate.objects.filter(device_type=devicetype), key=attrgetter('name')),
+            natsorted(DeviceBayTemplate.objects.filter(
+                device_type=devicetype), key=attrgetter('name')),
             orderable=False
         )
         if request.user.has_perm('dcim.change_devicetype'):
@@ -630,7 +790,8 @@ class DeviceTypeBulkImportView(PermissionRequiredMixin, BulkImportView):
 class DeviceTypeBulkEditView(PermissionRequiredMixin, BulkEditView):
     permission_required = 'dcim.change_devicetype'
     cls = DeviceType
-    queryset = DeviceType.objects.select_related('manufacturer').annotate(instance_count=Count('instances'))
+    queryset = DeviceType.objects.select_related(
+        'manufacturer').annotate(instance_count=Count('instances'))
     filter = filters.DeviceTypeFilter
     table = tables.DeviceTypeTable
     form = forms.DeviceTypeBulkEditForm
@@ -640,7 +801,8 @@ class DeviceTypeBulkEditView(PermissionRequiredMixin, BulkEditView):
 class DeviceTypeBulkDeleteView(PermissionRequiredMixin, BulkDeleteView):
     permission_required = 'dcim.delete_devicetype'
     cls = DeviceType
-    queryset = DeviceType.objects.select_related('manufacturer').annotate(instance_count=Count('instances'))
+    queryset = DeviceType.objects.select_related(
+        'manufacturer').annotate(instance_count=Count('instances'))
     filter = filters.DeviceTypeFilter
     table = tables.DeviceTypeTable
     default_return_url = 'dcim:devicetype_list'
@@ -838,13 +1000,79 @@ class PlatformBulkDeleteView(PermissionRequiredMixin, BulkDeleteView):
     default_return_url = 'dcim:platform_list'
 
 
-#
-# Devices
-#
+class ReportInterfaceConnectionNetJsonView(JSONDataView):
+
+    def get_context_data(self, **kwargs):
+        context = super(ReportInterfaceConnectionNetJsonView,
+                        self).get_context_data(**kwargs)
+
+        # Draw network topology for this device
+        # including its bay devices, eg. BMC
+        connections = InterfaceConnection.objects.all()
+
+        context = draw_level_1_interface_connections_netjson(connections)
+        return context
+
+
+class ReportInterfaceConnectionView(TemplateView):
+    """Full topology.
+    """
+    template_name = "dcim/report_interface_connections.html"
+
+    def get_context_data(self, **kwargs):
+        context = super(TemplateView, self).get_context_data(**kwargs)
+        context["topology"] = draw_level_1_interface_connections_cytoscape(
+            InterfaceConnection.objects.all()
+        )
+        context["netjson_url"] = reverse_lazy(
+            "dcim:report_interface_connections_netjson")
+        return context
+
+
+class DeviceBatchScanView(TemplateView):
+    """Batch scan all devices.
+    """
+
+    def post(self, request, *args, **kwargs):
+        device_scan_helper(Device.objects.all().values_list("id", flat=True))
+
+        return HttpResponseRedirect(reverse_lazy("dcim:device_list"))
+
+
+class DeviceScanView(DetailView):
+    """Scan this device.
+    """
+    model = Device
+    template_name = ""
+
+    def post(self, request, *args, **kwargs):
+        device = self.get_object()
+        device_scan_helper([device.id])
+
+        return HttpResponseRedirect(reverse_lazy("dcim:device",
+                                                 kwargs={"pk": device.id}))
+
+
+class DeviceBmcPowerControlView(DetailView):
+    """Command device power via BMC.
+    """
+    model = Device
+    template_name = ""
+
+    def post(self, request, *args, **kwargs):
+        device = self.get_object()
+        device_bmc_power_consumer.delay(device.id, kwargs["state"])
+
+        return HttpResponseRedirect(reverse_lazy("dcim:device",
+                                                 kwargs={"pk": device.id}))
+
 
 class DeviceListView(ObjectListView):
-    queryset = Device.objects.select_related('device_type__manufacturer', 'device_role', 'tenant', 'site', 'rack',
-                                             'primary_ip4', 'primary_ip6')
+    queryset = Device.objects.select_related('device_type__manufacturer',
+                                             'device_role', 'tenant',
+                                             'site', 'rack',
+                                             'primary_ip4',
+                                             'primary_ip6')
     filter = filters.DeviceFilter
     filter_form = forms.DeviceFilterForm
     table = tables.DeviceDetailTable
@@ -861,7 +1089,8 @@ class DeviceView(View):
 
         # VirtualChassis members
         if device.virtual_chassis is not None:
-            vc_members = Device.objects.filter(virtual_chassis=device.virtual_chassis).order_by('vc_position')
+            vc_members = Device.objects.filter(
+                virtual_chassis=device.virtual_chassis).order_by('vc_position')
         else:
             vc_members = []
 
@@ -871,7 +1100,8 @@ class DeviceView(View):
         )
 
         # Console server ports
-        cs_ports = ConsoleServerPort.objects.filter(device=device).select_related('connected_console')
+        cs_ports = ConsoleServerPort.objects.filter(
+            device=device).select_related('connected_console')
 
         # Power ports
         power_ports = natsorted(
@@ -879,19 +1109,18 @@ class DeviceView(View):
         )
 
         # Power outlets
-        power_outlets = PowerOutlet.objects.filter(device=device).select_related('connected_port')
+        power_outlets = PowerOutlet.objects.filter(
+            device=device).select_related('connected_port')
 
         # Interfaces
         interfaces = device.vc_interfaces.order_naturally(
             device.device_type.interface_ordering
-        ).select_related(
-            'connected_as_a__interface_b__device', 'connected_as_b__interface_a__device',
-            'circuit_termination__circuit'
         ).prefetch_related('ip_addresses')
 
         # Device bays
         device_bays = natsorted(
-            DeviceBay.objects.filter(device=device).select_related('installed_device__device_type__manufacturer'),
+            DeviceBay.objects.filter(device=device).select_related(
+                'installed_device__device_type__manufacturer'),
             key=attrgetter('name')
         )
 
@@ -901,17 +1130,23 @@ class DeviceView(View):
         # Secrets
         secrets = device.secrets.all()
 
-        # Find up to ten devices in the same site with the same functional role for quick reference.
-        related_devices = Device.objects.filter(
-            site=device.site, device_role=device.device_role
-        ).exclude(
-            pk=device.pk
-        ).select_related(
-            'rack', 'device_type__manufacturer'
-        )[:10]
+        # Find up to ten devices in the same site with the same
+        # functional role for quick reference.
+        related_devices = device.related_devices
 
         # Show graph button on interfaces only if at least one graph has been created.
         show_graphs = Graph.objects.filter(type=GRAPH_TYPE_INTERFACE).exists()
+
+        # Draw network topology for this device
+        # including its bay devices, eg. BMC
+        children_devices = device.get_children().values_list("id", flat=True)
+        connections = InterfaceConnection.objects.filter(
+            Q(interface_a__device=device) |
+            Q(interface_b__device=device) |
+            Q(interface_a__device__in=children_devices) |
+            Q(interface_b__device__in=children_devices))
+
+        topology = draw_level_1_interface_connections_cytoscape(connections)
 
         return render(request, 'dcim/device.html', {
             'device': device,
@@ -926,7 +1161,31 @@ class DeviceView(View):
             'vc_members': vc_members,
             'related_devices': related_devices,
             'show_graphs': show_graphs,
+            "topology": topology,
+            "netjson_url": reverse_lazy("dcim:device_netjson",
+                                        kwargs={"pk": device.id})
         })
+
+
+class DeviceNetJsonView(JSONDetailView):
+    model = Device
+    template_name = ""
+
+    def get_context_data(self, **kwargs):
+        context = super(JSONDetailView, self).get_context_data(**kwargs)
+        device = self.get_object()
+
+        # Draw network topology for this device
+        # including its bay devices, eg. BMC
+        children_devices = device.get_children().values_list("id", flat=True)
+        connections = InterfaceConnection.objects.filter(
+            Q(interface_a__device=device) |
+            Q(interface_b__device=device) |
+            Q(interface_a__device__in=children_devices) |
+            Q(interface_b__device__in=children_devices))
+
+        context = draw_level_1_interface_connections_netjson(connections)
+        return context
 
 
 class DeviceInventoryView(View):
@@ -1038,7 +1297,8 @@ class ChildDeviceBulkImportView(PermissionRequiredMixin, BulkImportView):
 class DeviceBulkEditView(PermissionRequiredMixin, BulkEditView):
     permission_required = 'dcim.change_device'
     cls = Device
-    queryset = Device.objects.select_related('tenant', 'site', 'rack', 'device_role', 'device_type__manufacturer')
+    queryset = Device.objects.select_related(
+        'tenant', 'site', 'rack', 'device_role', 'device_type__manufacturer')
     filter = filters.DeviceFilter
     table = tables.DeviceTable
     form = forms.DeviceBulkEditForm
@@ -1048,7 +1308,8 @@ class DeviceBulkEditView(PermissionRequiredMixin, BulkEditView):
 class DeviceBulkDeleteView(PermissionRequiredMixin, BulkDeleteView):
     permission_required = 'dcim.delete_device'
     cls = Device
-    queryset = Device.objects.select_related('tenant', 'site', 'rack', 'device_role', 'device_type__manufacturer')
+    queryset = Device.objects.select_related(
+        'tenant', 'site', 'rack', 'device_role', 'device_type__manufacturer')
     filter = filters.DeviceFilter
     table = tables.DeviceTable
     default_return_url = 'dcim:device_list'
@@ -1090,7 +1351,8 @@ class ConsolePortConnectView(PermissionRequiredMixin, View):
     def post(self, request, pk):
 
         consoleport = get_object_or_404(ConsolePort, pk=pk)
-        form = forms.ConsolePortConnectionForm(request.POST, instance=consoleport)
+        form = forms.ConsolePortConnectionForm(
+            request.POST, instance=consoleport)
 
         if form.is_valid():
 
@@ -1125,7 +1387,8 @@ class ConsolePortDisconnectView(PermissionRequiredMixin, View):
 
         if not consoleport.cs_port:
             messages.warning(
-                request, "Cannot disconnect console port {}: It is not connected to anything.".format(consoleport)
+                request, "Cannot disconnect console port {}: It is not connected to anything.".format(
+                    consoleport)
             )
             return redirect('dcim:device', pk=consoleport.device.pk)
 
@@ -1266,7 +1529,8 @@ class ConsoleServerPortDisconnectView(PermissionRequiredMixin, View):
         if not hasattr(consoleserverport, 'connected_console'):
             messages.warning(
                 request,
-                "Cannot disconnect console server port {}: Nothing is connected to it.".format(consoleserverport)
+                "Cannot disconnect console server port {}: Nothing is connected to it.".format(
+                    consoleserverport)
             )
             return redirect('dcim:device', pk=consoleserverport.device.pk)
 
@@ -1411,7 +1675,8 @@ class PowerPortDisconnectView(PermissionRequiredMixin, View):
 
         if not powerport.power_outlet:
             messages.warning(
-                request, "Cannot disconnect power port {}: It is not connected to an outlet.".format(powerport)
+                request, "Cannot disconnect power port {}: It is not connected to an outlet.".format(
+                    powerport)
             )
             return redirect('dcim:device', pk=powerport.device.pk)
 
@@ -1550,7 +1815,8 @@ class PowerOutletDisconnectView(PermissionRequiredMixin, View):
 
         if not hasattr(poweroutlet, 'connected_port'):
             messages.warning(
-                request, "Cannot disconnect power outlet {}: Nothing is connected to it.".format(poweroutlet)
+                request, "Cannot disconnect power outlet {}: Nothing is connected to it.".format(
+                    poweroutlet)
             )
             return redirect('dcim:device', pk=poweroutlet.device.pk)
 
@@ -1629,6 +1895,48 @@ class PowerOutletBulkDeleteView(PermissionRequiredMixin, BulkDeleteView):
 #
 # Interfaces
 #
+
+class InterfaceRescanView(TemplateView):
+    """Helper to clear all InterfaceConnection & Interface, and kick off
+    a scan of devices.
+    """
+    template_name = ""
+
+    def post(self, request, *args, **kwargs):
+        # clear all Interface and InterfaceConnection
+        InterfaceConnection.objects.all().delete()
+        Interface.objects.all().delete()
+
+        # rescan
+        ids = Device.objects.all().values_list("id", flat=True)
+        device_scan_helper(ids)
+
+        return HttpResponseRedirect(reverse_lazy("dcim:interface_list"))
+
+
+class InterfaceListView(ObjectListView):
+    queryset = Interface.objects.all()
+    filter = filters.InterfaceFilter
+    filter_form = forms.InterfaceForm
+    table = tables.InterfaceTable
+    template_name = 'dcim/interface_list.html'
+
+
+class InterfaceView(DetailView):
+    model = Interface
+    template_name = "dcim/interface.html"
+
+    def get_context_data(self, **kwargs):
+        context = super(DetailView, self).get_context_data(**kwargs)
+        interface = self.get_object()
+        context["interface"] = interface
+        context["topology"] = draw_level_1_interface_connections_cytoscape(
+            InterfaceConnection.objects.filter(
+                Q(interface_a=interface) |
+                Q(interface_b=interface)
+            ))
+        return context
+
 
 class InterfaceCreateView(PermissionRequiredMixin, ComponentCreateView):
     permission_required = 'dcim.add_interface'
@@ -1739,7 +2047,8 @@ class DeviceBayPopulateView(PermissionRequiredMixin, View):
 
             device_bay.installed_device = form.cleaned_data['installed_device']
             device_bay.save()
-            messages.success(request, "Added {} to {}.".format(device_bay.installed_device, device_bay))
+            messages.success(request, "Added {} to {}.".format(
+                device_bay.installed_device, device_bay))
 
             return redirect('dcim:device', pk=device_bay.device.pk)
 
@@ -1774,7 +2083,8 @@ class DeviceBayDepopulateView(PermissionRequiredMixin, View):
             removed_device = device_bay.installed_device
             device_bay.installed_device = None
             device_bay.save()
-            messages.success(request, "{} has been removed from {}.".format(removed_device, device_bay))
+            messages.success(request, "{} has been removed from {}.".format(
+                removed_device, device_bay))
 
             return redirect('dcim:device', pk=device_bay.device.pk)
 
@@ -1913,7 +2223,8 @@ class InterfaceConnectionAddView(PermissionRequiredMixin, GetReturnURLMixin, Vie
             UserAction.objects.log_edit(request.user, interfaceconnection, msg)
 
             if '_addanother' in request.POST:
-                base_url = reverse('dcim:interfaceconnection_add', kwargs={'pk': device.pk})
+                base_url = reverse(
+                    'dcim:interfaceconnection_add', kwargs={'pk': device.pk})
                 device_b = interfaceconnection.interface_b.device
                 params = urlencode({
                     'rack_b': device_b.rack.pk if device_b.rack else '',
@@ -1984,8 +2295,8 @@ class InterfaceConnectionsBulkImportView(PermissionRequiredMixin, BulkImportView
 #
 
 class ConsoleConnectionsListView(ObjectListView):
-    queryset = ConsolePort.objects.select_related('device', 'cs_port__device').filter(cs_port__isnull=False) \
-        .order_by('cs_port__device__name', 'cs_port__name')
+    queryset = ConsolePort.objects.select_related(
+        'device', 'cs_port__device').filter(cs_port__isnull=False).order_by('cs_port__device__name', 'cs_port__name')
     filter = filters.ConsoleConnectionFilter
     filter_form = forms.ConsoleConnectionFilterForm
     table = tables.ConsoleConnectionTable
@@ -1993,8 +2304,8 @@ class ConsoleConnectionsListView(ObjectListView):
 
 
 class PowerConnectionsListView(ObjectListView):
-    queryset = PowerPort.objects.select_related('device', 'power_outlet__device').filter(power_outlet__isnull=False) \
-        .order_by('power_outlet__device__name', 'power_outlet__name')
+    queryset = PowerPort.objects.select_related(
+        'device', 'power_outlet__device').filter(power_outlet__isnull=False).order_by('power_outlet__device__name', 'power_outlet__name')
     filter = filters.PowerConnectionFilter
     filter_form = forms.PowerConnectionFilterForm
     table = tables.PowerConnectionTable
@@ -2070,12 +2381,22 @@ class InventoryItemBulkDeleteView(PermissionRequiredMixin, BulkDeleteView):
     default_return_url = 'dcim:inventoryitem_list'
 
 
+class InventoryItemDetailView(DetailView):
+    model = InventoryItem
+    template_name = "dcim/inventoryitem.html"
+
+    def get_context_data(self, **kwargs):
+        context = super(DetailView, self).get_context_data(**kwargs)
+        context["item"] = self.get_object()
+        return context
+
 #
 # Virtual chassis
 #
 
+
 class VirtualChassisListView(ObjectListView):
-    queryset = VirtualChassis.objects.select_related('master').annotate(member_count=Count('members'))
+    queryset = VirtualChassis.objects.annotate(member_count=Count('members'))
     table = tables.VirtualChassisTable
     filter = filters.VirtualChassisFilter
     filter_form = forms.VirtualChassisFilterForm
@@ -2149,7 +2470,8 @@ class VirtualChassisEditView(PermissionRequiredMixin, GetReturnURLMixin, View):
             formset=forms.BaseVCMemberFormSet,
             extra=0
         )
-        members_queryset = virtual_chassis.members.select_related('rack').order_by('vc_position')
+        members_queryset = virtual_chassis.members.select_related(
+            'rack').order_by('vc_position')
 
         vc_form = forms.VirtualChassisForm(instance=virtual_chassis)
         vc_form.fields['master'].queryset = members_queryset
@@ -2170,9 +2492,11 @@ class VirtualChassisEditView(PermissionRequiredMixin, GetReturnURLMixin, View):
             formset=forms.BaseVCMemberFormSet,
             extra=0
         )
-        members_queryset = virtual_chassis.members.select_related('rack').order_by('vc_position')
+        members_queryset = virtual_chassis.members.select_related(
+            'rack').order_by('vc_position')
 
-        vc_form = forms.VirtualChassisForm(request.POST, instance=virtual_chassis)
+        vc_form = forms.VirtualChassisForm(
+            request.POST, instance=virtual_chassis)
         vc_form.fields['master'].queryset = members_queryset
         formset = VCMemberFormSet(request.POST, queryset=members_queryset)
 
@@ -2186,7 +2510,8 @@ class VirtualChassisEditView(PermissionRequiredMixin, GetReturnURLMixin, View):
                 # Nullify the vc_position of each member first to allow reordering without raising an IntegrityError on
                 # duplicate positions. Then save each member instance.
                 members = formset.save(commit=False)
-                Device.objects.filter(pk__in=[m.pk for m in members]).update(vc_position=None)
+                Device.objects.filter(
+                    pk__in=[m.pk for m in members]).update(vc_position=None)
                 for member in members:
                     member.save()
 
@@ -2234,12 +2559,14 @@ class VirtualChassisAddMemberView(PermissionRequiredMixin, GetReturnURLMixin, Vi
             device = member_select_form.cleaned_data['device']
             device.virtual_chassis = virtual_chassis
             data = {k: request.POST[k] for k in ['vc_position', 'vc_priority']}
-            membership_form = forms.DeviceVCMembershipForm(data=data, validate_vc_position=True, instance=device)
+            membership_form = forms.DeviceVCMembershipForm(
+                data=data, validate_vc_position=True, instance=device)
 
             if membership_form.is_valid():
 
                 membership_form.save()
-                msg = 'Added member <a href="{}">{}</a>'.format(device.get_absolute_url(), escape(device))
+                msg = 'Added member <a href="{}">{}</a>'.format(
+                    device.get_absolute_url(), escape(device))
                 messages.success(request, mark_safe(msg))
                 UserAction.objects.log_edit(request.user, device, msg)
 
@@ -2265,7 +2592,8 @@ class VirtualChassisRemoveMemberView(PermissionRequiredMixin, GetReturnURLMixin,
 
     def get(self, request, pk):
 
-        device = get_object_or_404(Device, pk=pk, virtual_chassis__isnull=False)
+        device = get_object_or_404(
+            Device, pk=pk, virtual_chassis__isnull=False)
         form = ConfirmationForm(initial=request.GET)
 
         return render(request, 'dcim/virtualchassis_remove_member.html', {
@@ -2276,13 +2604,15 @@ class VirtualChassisRemoveMemberView(PermissionRequiredMixin, GetReturnURLMixin,
 
     def post(self, request, pk):
 
-        device = get_object_or_404(Device, pk=pk, virtual_chassis__isnull=False)
+        device = get_object_or_404(
+            Device, pk=pk, virtual_chassis__isnull=False)
         form = ConfirmationForm(request.POST)
 
         # Protect master device from being removed
         virtual_chassis = VirtualChassis.objects.filter(master=device).first()
         if virtual_chassis is not None:
-            msg = 'Unable to remove master device {} from the virtual chassis.'.format(escape(device))
+            msg = 'Unable to remove master device {} from the virtual chassis.'.format(
+                escape(device))
             messages.error(request, mark_safe(msg))
             return redirect(device.get_absolute_url())
 
@@ -2294,7 +2624,8 @@ class VirtualChassisRemoveMemberView(PermissionRequiredMixin, GetReturnURLMixin,
                 vc_priority=None
             )
 
-            msg = 'Removed {} from virtual chassis {}'.format(device, device.virtual_chassis)
+            msg = 'Removed {} from virtual chassis {}'.format(
+                device, device.virtual_chassis)
             messages.success(request, msg)
             UserAction.objects.log_edit(request.user, device, msg)
 

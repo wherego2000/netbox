@@ -16,6 +16,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='rack',
             name='facility_id',
-            field=utilities.fields.NullableCharField(blank=True, max_length=50, null=True, verbose_name='Facility ID'),
+            field=utilities.fields.NullableCharField(
+                blank=True, max_length=50, null=True, verbose_name='Facility ID'),
         ),
     ]

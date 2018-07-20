@@ -15,6 +15,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='ipaddress',
             name='status',
-            field=models.PositiveSmallIntegerField(choices=[(1, b'Active'), (2, b'Reserved'), (5, b'DHCP')], default=1, verbose_name=b'Status'),
+            field=models.PositiveSmallIntegerField(choices=[(
+                1, b'Active'), (2, b'Reserved'), (5, b'DHCP')], default=1, verbose_name=b'Status'),
         ),
     ]

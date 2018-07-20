@@ -15,6 +15,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='devicetype',
             name='interface_ordering',
-            field=models.PositiveSmallIntegerField(choices=[[1, b'Slot/position'], [2, b'Name (alphabetically)']], default=1),
+            field=models.PositiveSmallIntegerField(
+                choices=[[1, b'Slot/position'], [2, b'Name (alphabetically)']], default=1),
         ),
     ]
